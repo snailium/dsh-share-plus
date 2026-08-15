@@ -54,6 +54,9 @@
     "lan"
   ],
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
     "@types/markdown-it": "^14.1.2",
