@@ -1,6 +1,6 @@
 {
   "name": "@zljr/dsh-share",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Session share plugin for DeepSeek Harness: generate a read-only LAN share link (frozen transcript snapshot) for the current session.",
   "author": "zljr",
   "repository": {
