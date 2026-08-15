@@ -1,0 +1,68 @@
+{
+  "name": "dsh-share",
+  "version": "0.1.0",
+  "description": "Session share plugin for DeepSeek Harness: generate a read-only LAN share link (frozen transcript snapshot) for the current session.",
+  "author": "zljr",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zljr/dsh-share.git"
+  },
+  "homepage": "https://github.com/zljr/dsh-share#readme",
+  "bugs": {
+    "url": "https://github.com/zljr/dsh-share/issues"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "README_CN.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run typecheck && node tests/host.test.mjs && node tests/client.test.mjs"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ],
+      "platform": "web"
+    }
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "cordis",
+    "plugin",
+    "share",
+    "lan"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@types/markdown-it": "^14.1.2",
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.3.31",
+    "esbuild": "^0.28.2",
+    "jsdom": "^30.0.1",
+    "markdown-it": "^14.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^7.0.2"
+  }
+}
