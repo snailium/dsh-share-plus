@@ -36,12 +36,25 @@ const events = [
   { seq: 10, type: 'assistant/message', time: 9000, data: { message: { source: { kind: 'model' }, content: [{ type: 'text', text: '**bold** and `code` and <script>alert(2)</script>' }] } }, surfaceOp: 'append' },
 ]
 
+// Two turns with a 90s idle gap between them: active execution = 2s, while the
+// wall-clock span is 91s. `durationMs` must report the former.
+const s2events = [
+  { seq: 1, type: 'turn/start', time: 10000 },
+  { seq: 2, type: 'assistant/message', time: 11000, data: { message: { source: { kind: 'model' }, content: [{ type: 'text', text: 'a' }] } }, surfaceOp: 'append' },
+  { seq: 3, type: 'turn/end', time: 11000 },
+  { seq: 4, type: 'turn/start', time: 100000 },
+  { seq: 5, type: 'assistant/message', time: 101000, data: { message: { source: { kind: 'model' }, content: [{ type: 'text', text: 'b' }] } }, surfaceOp: 'append' },
+  { seq: 6, type: 'turn/end', time: 101000 },
+]
+
 const ctx = {
   get(name) {
     if (name === 'sessionQuery') return {
       readSession: async (id) => {
-        if (id !== 's1') throw new Error(`session ${id} not found`)
-        return { session: { id }, events }
+        const sessions = { s1: events, s2: s2events }
+        const found = sessions[id]
+        if (found === undefined) throw new Error(`session ${id} not found`)
+        return { session: { id }, events: found }
       },
       readTitle: async () => 'Test title',
     }
@@ -125,6 +138,13 @@ assert.match(missing.error.message, /sessionId/)
 const unknown = await handler('nope', {})
 assert.equal(unknown.ok, false)
 assert.match(unknown.error.message, /unknown endpoint/)
+
+// -- execution duration = sum of turn spans, not wall-clock span --
+const res2 = await handler('create', { sessionId: 's2' })
+assert.equal(res2.ok, true, 's2 create should succeed')
+const s2html = await (await fetch(`http://127.0.0.1:${port}/s/${res2.value.share.token}`)).text()
+assert.match(s2html, /执行时长<\/span><b>2s<\/b>/, 'duration is the active turn time (2s), excluding idle gaps')
+assert.doesNotMatch(s2html, /1m 31s/, 'idle gap between turns is not counted')
 
 // cleanup
 for (const d of disposers.reverse()) await d?.()

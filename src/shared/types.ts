@@ -50,7 +50,7 @@ export interface ContextBreakdown {
 export interface ShareStats {
   turns: number
   steps: number
-  /** Wall-clock span of the session log (ms). */
+  /** Active execution time (sum of turn spans; falls back to wall-clock span). */
   durationMs: number
   /** Total time spent inside tool calls (call → result, ms). */
   toolCallMs: number

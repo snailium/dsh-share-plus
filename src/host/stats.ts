@@ -1,10 +1,11 @@
 /**
  * Session statistics — folds a raw event log once into the share-page summary:
- * turn/step counts, wall-clock duration, total tool-call time, cache
- * read/write, provider-reported input/output tokens, and the current context
- * window occupancy broken down by category (system / tool schemas / user /
- * injected / assistant / tool results). The context composition reuses the
- * token-meter heuristic (pricing.ts) and mirrors dsh's surface fold.
+ * turn/step counts, active execution duration (sum of turn spans — excludes
+ * idle time between turns), total tool-call time, cache read/write,
+ * provider-reported input/output tokens, and the current context window
+ * occupancy broken down by category (system / tool schemas / user / injected /
+ * assistant / tool results). The context composition reuses the token-meter
+ * heuristic (pricing.ts) and mirrors dsh's surface fold.
  */
 
 import type { ShareStats } from '../shared/types'
@@ -62,6 +63,14 @@ export function computeStats(events: readonly SessionEvent[]): ShareStats {
   let steps = 0
   let minTime: number | undefined
   let maxTime: number | undefined
+  let lastEventTime: number | undefined
+
+  // Active execution = sum of turn spans (turn/start → turn/end). This is the
+  // headline "execution duration": idle time between the user's turns does not
+  // count. Falls back to the wall-clock span when the log has no turn
+  // boundaries.
+  let turnStartTime: number | undefined
+  let totalTurnMs = 0
 
   let toolCallMs = 0
   const callStarts = new Map<string, number>()
@@ -75,11 +84,19 @@ export function computeStats(events: readonly SessionEvent[]): ShareStats {
     if (typeof ev.time === 'number') {
       minTime = minTime === undefined ? ev.time : Math.min(minTime, ev.time)
       maxTime = maxTime === undefined ? ev.time : Math.max(maxTime, ev.time)
+      lastEventTime = ev.time
     }
 
     switch (ev.type) {
       case 'turn/start':
         turns += 1
+        if (ev.time !== undefined) turnStartTime = ev.time
+        break
+      case 'turn/end':
+        if (turnStartTime !== undefined && ev.time !== undefined && ev.time >= turnStartTime) {
+          totalTurnMs += ev.time - turnStartTime
+        }
+        turnStartTime = undefined
         break
       case 'step/start':
         steps += 1
@@ -153,11 +170,19 @@ export function computeStats(events: readonly SessionEvent[]): ShareStats {
     steps = count
   }
 
+  // Close an in-progress (open) turn against the last event time.
+  if (turnStartTime !== undefined && lastEventTime !== undefined && lastEventTime >= turnStartTime) {
+    totalTurnMs += lastEventTime - turnStartTime
+  }
+
+  const wallSpanMs = (minTime !== undefined && maxTime !== undefined) ? Math.max(0, maxTime - minTime) : 0
+  const durationMs = totalTurnMs > 0 ? totalTurnMs : wallSpanMs
+
   const contextTotal = systemTokens + toolsTokens + sums.user + sums.inject + sums.assistant + sums.tool
   return {
     turns,
     steps,
-    durationMs: (minTime !== undefined && maxTime !== undefined) ? Math.max(0, maxTime - minTime) : 0,
+    durationMs,
     toolCallMs,
     cacheReadTokens,
     cacheWriteTokens,
