@@ -1,5 +1,5 @@
 {
-  "name": "dsh-share",
+  "name": "@zljr/dsh-share",
   "version": "0.1.0",
   "description": "Session share plugin for DeepSeek Harness: generate a read-only LAN share link (frozen transcript snapshot) for the current session.",
   "author": "zljr",
@@ -28,7 +28,8 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "npm run typecheck && node tests/host.test.mjs && node tests/client.test.mjs"
+    "test": "npm run typecheck && node tests/host.test.mjs && node tests/client.test.mjs",
+    "prepublishOnly": "npm run build"
   },
   "dsh": {
     "bundle": {

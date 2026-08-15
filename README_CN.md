@@ -38,6 +38,17 @@
 
 ## 安装
 
+### 从 npm 安装
+
+```sh
+dsh plugin --profile web add @zljr/dsh-share
+dsh --profile web
+```
+
+即可——发布的包已内置构建好的 `lib/`，最终用户无需构建步骤。
+
+### 从源码安装（本地开发）
+
 ```sh
 # 1. 构建产物（lib/）
 pnpm install
@@ -99,6 +110,15 @@ src/
 scripts/build.mjs  # esbuild 构建（host ESM + client __ModuleLoader__ bundle）
 tests/             # host/client 功能测试（jsdom + 真实 React）
 ```
+
+## 发布
+
+```sh
+npm login --registry=https://registry.npmjs.org
+npm publish --registry=https://registry.npmjs.org
+```
+
+`prepublishOnly` 脚本会在每次发布前重建 `lib/`，确保 tarball 始终携带最新的 host + client 产物。
 
 ## License
 

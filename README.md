@@ -38,6 +38,17 @@ Token estimation for the context composition reuses the harness's own fixed-dens
 
 ## Install
 
+### From npm
+
+```sh
+dsh plugin --profile web add @zljr/dsh-share
+dsh --profile web
+```
+
+That's it — the published package ships the built `lib/`, so end users never need a build step.
+
+### From source (local development)
+
 ```sh
 # 1. Build the package artifacts (lib/)
 pnpm install
@@ -99,6 +110,15 @@ src/
 scripts/build.mjs  # esbuild build (host ESM + client __ModuleLoader__ bundle)
 tests/             # host/client functional tests (jsdom + real React)
 ```
+
+## Publishing
+
+```sh
+npm login --registry=https://registry.npmjs.org
+npm publish --registry=https://registry.npmjs.org
+```
+
+The `prepublishOnly` script rebuilds `lib/` before every publish, so the tarball always carries a fresh host + client bundle.
 
 ## License
 
