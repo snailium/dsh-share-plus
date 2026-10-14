@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-10-14
+
+### Fixed
+
+- Documentation and packaging only; no runtime behaviour changed. First release
+  published through npm Trusted Publishing (OIDC) with provenance.
+
 ## [0.3.1] - 2026-10-14
 
 ### Added
@@ -53,7 +60,8 @@ package was published.
 - Share pages are readable by default: prompts and the final answer only, with
   tool calls, injected context and stats opt-in behind `technicalInfo`.
 
-[Unreleased]: https://github.com/snailium/dsh-share-plus/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/snailium/dsh-share-plus/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/snailium/dsh-share-plus/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/snailium/dsh-share-plus/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/snailium/dsh-share-plus/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/snailium/dsh-share-plus/releases/tag/v0.2.0
