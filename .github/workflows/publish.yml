@@ -48,9 +48,16 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # The repo is a pnpm workspace with pnpm-lock.yaml; install through pnpm
+      # so the test gate runs against the locked dependency set.
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
+          cache: pnpm
 
       # Trusted Publishing (OIDC) requires npm >= 11.5.1 (and Node >= 22.14.0).
       # The npm bundled with Node 22 is older, so upgrade the CLI explicitly
@@ -60,8 +67,11 @@ jobs:
           npm install -g npm@latest
           npm --version
 
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
       - name: Test
-        run: npm test
+        run: pnpm test
 
       # npm versions are immutable: never let a red run look like a release.
       - name: Refuse to republish an existing version

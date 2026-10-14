@@ -21,18 +21,25 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # The repo is a pnpm workspace and ships pnpm-lock.yaml, not
+      # package-lock.json, so the npm cache mode of setup-node cannot find a
+      # lockfile to key on.
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node }}
-          cache: npm
+          cache: pnpm
 
       # The test script builds lib/ from src/ before running anything, so the
       # checked-in sources are the only input that matters.
       - name: Install
-        run: npm install --no-audit --no-fund
+        run: pnpm install --frozen-lockfile
 
       - name: Test (build + typecheck + suites)
-        run: npm test
+        run: pnpm test
 
       # Catches the classic packaging bugs: a `files` entry that omits a runtime
       # file, or a stray directory bloating the tarball.
