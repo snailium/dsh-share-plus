@@ -28,6 +28,12 @@ export interface ShareEntry {
   stats?: ShareStats
   /** Number of secret patterns redacted when this snapshot was frozen. */
   redactedCount?: number
+  /**
+   * Events skipped at fold time because their type is outside the session
+   * format vocabulary this build renders. Absent means the snapshot was
+   * complete; present means the page should say so.
+   */
+  unsupportedEvents?: { count: number; types: string[] }
 }
 
 interface PersistShape {

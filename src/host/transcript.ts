@@ -94,7 +94,64 @@ export interface FoldOptions {
 export interface FoldResult {
   entries: TranscriptEntry[]
   redactedCount: number
+  /**
+   * Set when the session carried event types this build does not understand.
+   *
+   * The plugin's contract is the session record format, not a harness version:
+   * it reads three of the vocabulary's events (`user/message`,
+   * `assistant/message`, `tool/result`) plus `seq`/`time`/`data`. A newer
+   * format that renames or adds a *rendered* event would otherwise be dropped
+   * in silence, and a short share page would look like an empty conversation
+   * rather than a version mismatch. Unknown events are still skipped safely —
+   * this only makes that visible to the reader.
+   */
+  unsupportedEvents?: {
+    /** How many events were skipped because their type is not recognised. */
+    count: number
+    /** A few of the unrecognised type names, for the banner. */
+    types: string[]
+  }
 }
+
+/**
+ * The session event types this build renders. Everything else is skipped.
+ * Mirrors a subset of the harness's `KNOWN_SESSION_EVENT_TYPES` (format v4);
+ * the point of listing them is to tell "an event we deliberately ignore"
+ * (`step/start`, `llm/retry`, …) apart from "an event we have never heard of".
+ */
+const RENDERED_EVENT_TYPES = new Set([
+  'user/message',
+  'assistant/message',
+  'tool/result',
+  'tool/call',
+])
+
+/**
+ * Format-v4 event types this build knows about and deliberately does not
+ * render. Listing them is what keeps the "unsupported format" banner honest:
+ * a session full of `step/start` and `llm/retry` is perfectly normal, while an
+ * event type absent from BOTH this set and {@link RENDERED_EVENT_TYPES} is
+ * evidence the record was written by a format this build does not know.
+ *
+ * Sourced from the harness's `KNOWN_SESSION_EVENT_TYPES` (59 entries, format 4)
+ * minus the rendered four.
+ */
+const KNOWN_IGNORED_EVENT_TYPES = new Set([
+  'agent-preset/selected', 'agent/inbox/spliced', 'approval/asked', 'approval/decided',
+  'approval/policy', 'assistant/attempt', 'command/done', 'command/run', 'compaction/end',
+  'compaction/prune', 'compaction/start', 'compaction/summary', 'deliverables/presented',
+  'developer/message', 'feedback/message-delete', 'feedback/message-put', 'feedback/record',
+  'goal/change', 'hook/invoked', 'hook/result', 'image/offload', 'llm/retry',
+  'llm/retry-started', 'model/selection', 'permission/preset', 'plan/mode', 'request/context',
+  'request/header', 'sandbox/mode', 'schedule/change', 'session-log-deepseek/delivery-accepted',
+  'session/end-seed', 'session/title', 'session/title-llm-request', 'step/end', 'step/start',
+  'subagent/catalog', 'subagent/descriptor', 'subagent/model-selection-policy',
+  'system/message', 'team/member', 'team/message/delivered', 'team/message/queued',
+  'team/task', 'todo/write', 'tool-workflow/agent-end', 'tool-workflow/agent-start',
+  'tool-workflow/run-end', 'tool-workflow/run-start', 'tool/ptc-dispatch',
+  'tool/ptc-dispatch-start', 'turn/end', 'turn/start', 'web/deepseek-search-llm-request',
+  'workspace/changes',
+])
 
 export function foldTranscript(events: readonly SessionEvent[], opts?: FoldOptions): FoldResult {
   // callId -> tool name, resolved from tool/call events.
@@ -107,10 +164,22 @@ export function foldTranscript(events: readonly SessionEvent[], opts?: FoldOptio
     }
   }
 
+  const unknownTypes = new Set<string>()
+  let unknownCount = 0
+
   const out: TranscriptEntry[] = []
   for (const ev of events) {
     if (isReplacement(ev)) continue
     const data = ev.data as Record<string, unknown> | undefined
+
+    // An event type outside the format-v4 vocabulary we render means this
+    // session was written by a newer/older format. `*/...` shaped types are
+    // recorded; harness-internal namespaces without a slash are not, because
+    // they are not part of the session-record vocabulary.
+    if (typeof ev.type === 'string' && !RENDERED_EVENT_TYPES.has(ev.type) && ev.type.includes('/') && !KNOWN_IGNORED_EVENT_TYPES.has(ev.type)) {
+      unknownCount += 1
+      if (unknownTypes.size < 5) unknownTypes.add(ev.type)
+    }
 
     switch (ev.type) {
       case 'user/message': {
@@ -200,7 +269,11 @@ export function foldTranscript(events: readonly SessionEvent[], opts?: FoldOptio
       redactedCount += r.count
     }
   }
-  return { entries: out, redactedCount }
+  return {
+    entries: out,
+    redactedCount,
+    ...(unknownCount > 0 ? { unsupportedEvents: { count: unknownCount, types: [...unknownTypes] } } : {}),
+  }
 }
 
 /** A short display title: first real user message, else the session id. */

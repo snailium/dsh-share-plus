@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-10-14
+
+### Added
+
+- **`dsh.sessionFormat: 4`** in the package manifest. The plugin's real
+  compatibility contract is the session RECORD FORMAT, not a harness version: it
+  renders four event types (`user/message`, `assistant/message`, `tool/result`,
+  `tool/call`) out of the format-4 vocabulary and reads the session store through
+  `ctx.sessionQuery`. It is declared here rather than as a `peerDependency`
+  because the owning package (`@deepseek-ai/dsh-session`) is never imported at
+  runtime and is not resolvable from a profile — a peer would only produce an
+  unsatisfiable install warning.
+- The share page now reports a session written by an **unknown format** instead
+  of silently rendering short: "此分享的部分内容使用了较新的会话格式（N 条记录未
+  渲染）". The fold step compares each event type against the 59-entry format-4
+  vocabulary, counting types that are in neither the rendered nor the
+  known-ignored set. Ordinary format-4 events (`step/start`, `llm/retry`,
+  `turn/start`, …) never raise it, so no real session cries wolf.
+
+### Removed
+
+- The `@deepseek-ai/schemastery` runtime dependency. The settings schema library
+  is inlined into `lib/index.js` by the build (the harness identifies a schema by
+  its `~standard.vendor` string, so an inlined copy is equivalent), so the
+  declaration only caused a redundant, possibly version-skewed install. The
+  published package now resolves **zero** bare-specifier imports on the host
+  side — only `node:` builtins.
+
+
 ## [0.3.2] - 2026-10-14
 
 ### Fixed
@@ -60,7 +89,8 @@ package was published.
 - Share pages are readable by default: prompts and the final answer only, with
   tool calls, injected context and stats opt-in behind `technicalInfo`.
 
-[Unreleased]: https://github.com/snailium/dsh-share-plus/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/snailium/dsh-share-plus/compare/v0.3.3...HEAD
+[0.3.3]: https://github.com/snailium/dsh-share-plus/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/snailium/dsh-share-plus/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/snailium/dsh-share-plus/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/snailium/dsh-share-plus/compare/v0.2.0...v0.3.0

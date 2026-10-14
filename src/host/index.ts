@@ -186,6 +186,7 @@ export function apply(ctx: Context, config?: ShareConfig): void {
           technical: entry.technical !== false,
           ...(entry.stats !== undefined ? { stats: entry.stats } : {}),
           ...(entry.redactedCount !== undefined ? { redactedCount: entry.redactedCount } : {}),
+          ...(entry.unsupportedEvents !== undefined ? { unsupportedEvents: entry.unsupportedEvents } : {}),
         })
         return { html, ...(entry.expiresAt !== undefined ? { expiresAt: entry.expiresAt } : {}) }
       },
@@ -325,6 +326,7 @@ export function apply(ctx: Context, config?: ShareConfig): void {
             technical,
             ...(stats !== undefined ? { stats } : {}),
             redactedCount,
+            ...(folded.unsupportedEvents !== undefined ? { unsupportedEvents: folded.unsupportedEvents } : {}),
           }
           await store.add(entry)
           // `add` evicts the oldest shares at MAX_SHARES; drop any cached page

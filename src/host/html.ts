@@ -213,6 +213,11 @@ export interface SharePageData {
   stats?: ShareStats
   /** Number of secret patterns redacted when the snapshot was frozen. */
   redactedCount?: number
+  /**
+   * Events skipped because their type is outside the session-format vocabulary
+   * this build renders. Present only when the snapshot may be incomplete.
+   */
+  unsupportedEvents?: { count: number; types: string[] }
 }
 
 export function renderShareHtml(data: SharePageData): string {
@@ -225,6 +230,12 @@ export function renderShareHtml(data: SharePageData): string {
     : ''
   const redacted = data.redactedCount !== undefined && data.redactedCount > 0
     ? ` · <span class="redacted">已脱敏 ${data.redactedCount} 处</span>`
+    : ''
+  // A session written by an unknown format is not an error — the page simply
+  // shows less than it should. Say so, rather than letting a short page read
+  // as an empty conversation.
+  const unsupported = data.unsupportedEvents !== undefined && data.unsupportedEvents.count > 0
+    ? `<div class="notice">此分享的部分内容使用了较新的会话格式（${data.unsupportedEvents.count} 条记录未渲染），可能显示不完整。</div>`
     : ''
   const stats = data.stats !== undefined ? statsHtml(data.stats) : ''
 
@@ -292,6 +303,8 @@ export function renderShareHtml(data: SharePageData): string {
   header .meta { margin-top: 2px; font-size: 12px; color: var(--fg-secondary); }
   header .redacted { color: #b45309; }
   @media (prefers-color-scheme: dark) { header .redacted { color: #fbbf24; } }
+  .notice { margin: 0 0 16px; padding: 10px 12px; border: 1px solid #fcd34d; border-radius: 10px; background: #fffbeb; color: #92400e; font-size: 13px; line-height: 1.5; }
+  @media (prefers-color-scheme: dark) { .notice { border-color: #78350f; background: #2a1f0a; color: #fcd34d; } }
   main { max-width: 680px; margin: 0 auto; padding: 20px 32px 64px; }
 
   .row { display: flex; flex-direction: column; margin: 0 0 16px; }
@@ -401,6 +414,7 @@ export function renderShareHtml(data: SharePageData): string {
 <header>
   <h1>${escapeHtml(data.title)}</h1>
   <div class="meta">会话快照 · ${fmtTime(data.createdAt)}${expiry ? ' · ' + expiry : ''}${redacted}</div>
+  ${unsupported}
 </header>
 <main>
 ${stats}

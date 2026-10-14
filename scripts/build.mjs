@@ -77,6 +77,17 @@ if (!host.inject.includes('connection')) {
   throw new Error('host half must inject the connection service')
 }
 
+// The session-format contract is what this plugin actually couples to (it
+// renders four event types out of the format-4 vocabulary, and reads the
+// session store through `ctx.sessionQuery`). It is declared in `dsh.sessionFormat`
+// rather than as a peerDependency because the owning package
+// (`@deepseek-ai/dsh-session`) is not resolvable from a profile at runtime —
+// the plugin never imports it. Assert the declaration is present so a release
+// cannot ship without it.
+if (!Number.isInteger(pkg.dsh?.sessionFormat)) {
+  throw new Error('package.json must declare dsh.sessionFormat (the session record format this build renders)')
+}
+
 // The settings schema must survive bundling, on BOTH shapes the loader may
 // pick (`exports.default ?? exports`). A missing or invalid schema is not a
 // hard failure at runtime — the Plugins page simply shows no card — so it has

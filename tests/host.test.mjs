@@ -79,6 +79,21 @@ const s3events = [
   ] } }, surfaceOp: 'append' },
 ]
 
+// A session written by a FUTURE format: alongside ordinary v4 events it carries
+// two event types this build has never seen. The plugin's contract is the
+// session record format (v4), not a harness version, so this is exactly the
+// case that must be reported rather than silently rendered short.
+const s4events = [
+  { seq: 1, type: 'request/header', time: 1000, data: { header: { config: { model: 'm', provider: 'p' }, system: 'sys', tools: [] } } },
+  { seq: 2, type: 'user/message', time: 2000, data: { source: { kind: 'user' }, content: [{ type: 'text', text: 'legit prompt' }] }, surfaceOp: 'append' },
+  // Ordinary v4 noise: knowing about these must NOT raise the banner.
+  { seq: 3, type: 'step/start', time: 2500, data: {} },
+  { seq: 4, type: 'llm/retry', time: 2600, data: {} },
+  { seq: 5, type: 'quantum/entangled', time: 3000, data: { payload: 'from the future' } },
+  { seq: 6, type: 'assistant/message', time: 4000, data: { message: { source: { kind: 'model' }, content: [{ type: 'text', text: 'legit answer' }] } }, surfaceOp: 'append' },
+  { seq: 7, type: 'future/thing', time: 5000, data: {} },
+]
+
 // Two turns with a 90s idle gap between them: active execution = 2s, while the
 // wall-clock span is 91s. `durationMs` must report the former.
 const s2events = [
@@ -119,7 +134,7 @@ const ctx = {
   get(name) {
     if (name === 'sessionQuery') return {
       readSession: async (id) => {
-        const sessions = { s1: events, s2: s2events, s3: s3events }
+        const sessions = { s1: events, s2: s2events, s3: s3events, s4: s4events }
         const found = sessions[id]
         if (found === undefined) throw new Error(`session ${id} not found`)
         return { session: { id }, events: found }
@@ -271,6 +286,29 @@ const defaults = await rpc('defaults', {})
 assert.equal(defaults.ok, true)
 assert.equal(defaults.value.technical, false, 'technical output is off by default')
 assert.equal(defaults.value.redact, true, 'redaction is on by default')
+
+// -- a session from a newer format is REPORTED, never silently truncated ----
+// The contract this plugin actually depends on is the session record format
+// (v4), not a harness or @deepseek-ai/dsh version: it renders four event types
+// out of the vocabulary's 59. A session carrying a type outside that
+// vocabulary is a format this build does not know, and a page that quietly
+// dropped the content would read as an empty conversation.
+const future = (await rpc('create', { sessionId: 's4' })).value.share
+const futurePort = new URL(future.urls[1] ?? future.url).port
+const futureHtml = await (await fetch(`http://127.0.0.1:${futurePort}/s/${future.token}`)).text()
+assert.match(futureHtml, /legit prompt/, 'known events of the future session still render')
+assert.match(futureHtml, /legit answer/, 'the answer renders too')
+assert.match(futureHtml, /较新的会话格式/, 'the page says the format is newer than this build')
+assert.match(futureHtml, /2 条记录未渲染/, 'and reports how many events were skipped')
+assert.doesNotMatch(futureHtml, /from the future/, 'an unknown event never leaks its payload into the page')
+
+// An ORDINARY session must carry no such banner: `step/start`, `llm/retry`,
+// `turn/start` and friends are format-v4 events this build deliberately
+// ignores, and warning about them would be crying wolf on every real session.
+const ordinary = (await rpc('create', { sessionId: 's2' })).value.share
+const ordinaryPort = new URL(ordinary.urls[1] ?? ordinary.url).port
+const ordinaryHtml = await (await fetch(`http://127.0.0.1:${ordinaryPort}/s/${ordinary.token}`)).text()
+assert.doesNotMatch(ordinaryHtml, /较新的会话格式/, 'an ordinary session raises no format banner')
 
 // -- revoke -> 404 --
 const revoke = await rpc('revoke', { token: share.token })

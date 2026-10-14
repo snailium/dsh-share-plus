@@ -230,6 +230,16 @@ dsh --profile web
 
 打开任意会话，点击头部的**分享**按钮即可。
 
+### 兼容性
+
+本插件与 harness 的契约是**会话记录格式**，不是 harness 版本号。它只渲染 format 4
+事件词表中的四种（`user/message`、`assistant/message`、`tool/result`、`tool/call`），
+并通过 `ctx.sessionQuery` 读取会话；其余事件要么有意忽略，要么完全不碰。该约束声明在
+清单的 `dsh.sessionFormat: 4` 字段里。
+
+遇到更新格式写出的会话不会崩溃：未知事件类型会被安全跳过，分享页会明确提示
+（"此分享的部分内容使用了较新的会话格式"），而不是悄悄显示成一段很短的对话。
+
 ### 互联网链接
 
 默认生成的都是局域网地址（`http://<ip>:<端口>/...`）。想让手机等不在同网段的设备也能打开，就在设置卡里填写**绑定域名**（或配置 `publicDomain`），例如 `share.example.com`。之后生成的链接以 `https://share.example.com/s/<token>` 开头，局域网地址仍保留在列表里作为备选。

@@ -232,6 +232,19 @@ dsh --profile web
 
 Open any session and click **Share** in the header.
 
+### Compatibility
+
+The plugin's contract with the harness is the **session record format**, not a
+harness version. It renders four event types out of the format-4 vocabulary
+(`user/message`, `assistant/message`, `tool/result`, `tool/call`) and reads the
+session store through `ctx.sessionQuery`; everything else it either ignores
+deliberately or never touches. The manifest declares this as
+`dsh.sessionFormat: 4`.
+
+A session written by a newer format is not a crash: unknown event types are
+skipped, and the share page says so ("此分享的部分内容使用了较新的会话格式")
+instead of quietly showing a short conversation.
+
 ### Public links
 
 By default every generated link is a LAN address (`http://<ip>:<port>/...`). When you want the link to work from the internet — say, for a phone that is not on your network — set **绑定域名 / Public domain** in the settings card (or `publicDomain` in config) to a hostname that points at this machine, e.g. `share.example.com`. Generated links then lead with `https://share.example.com/s/<token>`; the LAN addresses stay in the list as fallbacks for local devices.
