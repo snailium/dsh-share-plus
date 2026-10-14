@@ -151,6 +151,8 @@ export function makeShareButton(ctx: ClientCtx, t: Translate): (props: ShareButt
         h('div', { className: 'info' },
           h('div', { className: 'title', title: share.title }, share.title),
           h('div', { className: 'sub' }, sub)),
+        // The primary URL is the public one when a domain is configured —
+        // copy that by default, not the LAN fallback.
         h('button', { className: 'dshshare-ghost', onClick: () => doCopy(share.url, share.token) }, copied === share.token ? t('dialog.copied') : t('dialog.copy')),
         h('button', { className: 'dshshare-ghost', onClick: () => revoke(share.token) }, t('dialog.revoke')),
       )

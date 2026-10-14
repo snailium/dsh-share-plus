@@ -1,11 +1,19 @@
 {
   "name": "dsh-share-plus",
   "version": "0.3.1",
-  "description": "Session share plugin for DeepSeek Harness: generate a read-only LAN share link (frozen transcript snapshot) with best-effort secret redaction.",
+  "description": "Session share plugin for DeepSeek Harness: share a frozen, redacted transcript snapshot as a readable web page over LAN or a public domain.",
   "author": "gwang",
   "contributors": [
     "zljr (upstream @zljr/dsh-share, MIT)"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/snailium/dsh-share-plus.git"
+  },
+  "homepage": "https://github.com/snailium/dsh-share-plus#readme",
+  "bugs": {
+    "url": "https://github.com/snailium/dsh-share-plus/issues"
+  },
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -18,6 +26,7 @@
     "cordis.patch.yml",
     "README.md",
     "README_CN.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "scripts": {
@@ -47,6 +56,8 @@
     "plugin",
     "share",
     "lan",
+    "public-domain",
+    "reverse-proxy",
     "redaction",
     "privacy",
     "secret-scrubbing"
