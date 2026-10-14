@@ -69,6 +69,7 @@
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/schemastery": "^3.18.4",
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^22.10.0",
     "@types/react": "^18.3.31",

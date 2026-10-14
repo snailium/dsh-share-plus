@@ -26,14 +26,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   known-ignored set. Ordinary format-4 events (`step/start`, `llm/retry`,
   `turn/start`, …) never raise it, so no real session cries wolf.
 
-### Removed
+### Changed
 
-- The `@deepseek-ai/schemastery` runtime dependency. The settings schema library
-  is inlined into `lib/index.js` by the build (the harness identifies a schema by
-  its `~standard.vendor` string, so an inlined copy is equivalent), so the
-  declaration only caused a redundant, possibly version-skewed install. The
-  published package now resolves **zero** bare-specifier imports on the host
-  side — only `node:` builtins.
+- `@deepseek-ai/schemastery` moved from `dependencies` to `devDependencies`. It
+  is inlined into `lib/index.js` at build time (the harness identifies a schema
+  by its `~standard.vendor` string, so an inlined copy is equivalent to the
+  host's), so consumers never resolve it — declaring it as a runtime dependency
+  only installed a redundant, possibly version-skewed copy. The published host
+  bundle now resolves **zero** bare specifiers: `node:` builtins only. It stays
+  a devDependency because the build itself needs it.
 
 
 ## [0.3.2] - 2026-10-14
