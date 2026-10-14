@@ -1,6 +1,6 @@
 /**
  * Shared wire contract — exchanged between the Host and Client halves over the
- * `/dsh-share` Connection RPC channel.
+ * `/dsh-share-plus` Connection RPC channel.
  *
  * TYPE-ONLY module: both halves import these as `import type`, so nothing from
  * here ever reaches the runtime bundles.

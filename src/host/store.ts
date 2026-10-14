@@ -47,13 +47,14 @@ function defaultFile(): string {
   const home = process.env.DSH_HOME !== undefined && process.env.DSH_HOME !== ''
     ? process.env.DSH_HOME
     : homedir()
-  return join(home, '.dsh', 'dsh-share.json')
+  return join(home, '.dsh', 'dsh-share-plus.json')
 }
 
 export class ShareStore {
   private readonly file: string
   private readonly map = new Map<string, ShareEntry>()
   private readonly ready: Promise<void>
+  private writeQueue: Promise<void> = Promise.resolve()
 
   constructor(file?: string) {
     this.file = file ?? defaultFile()
@@ -114,18 +115,37 @@ export class ShareStore {
     return [...this.map.values()].sort((a, b) => b.createdAt - a.createdAt)
   }
 
-  private pruneExpired(now: number): void {
-    for (const [token, entry] of this.map) {
-      if (entry.expiresAt !== undefined && entry.expiresAt <= now) this.map.delete(token)
-    }
+  /** Prune expired entries and persist to disk if any were removed. */
+  async cleanExpired(): Promise<number> {
+    await this.ready
+    const count = this.pruneExpired(Date.now())
+    if (count > 0) await this.persist()
+    return count
   }
 
-  private async persist(): Promise<void> {
-    const shape: PersistShape = { version: 1, shares: [...this.map.values()] }
-    const body = JSON.stringify(shape)
-    await mkdir(dirname(this.file), { recursive: true })
-    const tmp = `${this.file}.${process.pid}.tmp`
-    await writeFile(tmp, body, 'utf8')
-    await rename(tmp, this.file)
+  private pruneExpired(now: number): number {
+    let count = 0
+    for (const [token, entry] of this.map) {
+      if (entry.expiresAt !== undefined && entry.expiresAt <= now) {
+        this.map.delete(token)
+        count += 1
+      }
+    }
+    return count
+  }
+
+  private persist(): Promise<void> {
+    const run = async (): Promise<void> => {
+      const shape: PersistShape = { version: 1, shares: [...this.map.values()] }
+      const body = JSON.stringify(shape)
+      await mkdir(dirname(this.file), { recursive: true })
+      const nonce = Math.random().toString(36).slice(2, 10)
+      const tmp = `${this.file}.${process.pid}.${Date.now()}.${nonce}.tmp`
+      await writeFile(tmp, body, 'utf8')
+      await rename(tmp, this.file)
+    }
+    // Serialize all disk writes so concurrent mutations never corrupt or overwrite temp files.
+    this.writeQueue = this.writeQueue.then(run, run)
+    return this.writeQueue
   }
 }

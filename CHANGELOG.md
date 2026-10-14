@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-14
+
+### Changed
+
+- **Renamed everything to `dsh-share-plus`.** The loader row id, the settings
+  namespace, the Connection RPC channel (`/dsh-share-plus`) and the snapshot
+  store file (`dsh-share-plus.json`) now match the package name. Previously the
+  row id and channel were still `dsh-share`, so `PACKAGE#ENTRY_ID` produced
+  `dsh-share-plus#dsh-share` and the profile had to keep the old id in its patch
+  layer. **Action required:** an existing profile's patch layer must rename
+  `- id: dsh-share` to `- id: dsh-share-plus`, and the store file must be renamed
+  to match — see the migration note in the README.
+- Concurrent store writes are now serialized, and each write uses a unique temp
+  filename. Two simultaneous mutations previously shared one `${file}.${pid}.tmp`
+  path and could corrupt it.
+- The client half is a proper ESM default export (`export default` instead of
+  `module.exports`); the bundle wrapper unwraps `.default`, so both shapes work.
+- `primaryLanIPv4()` caches its UDP route probe for 30s. On an offline or
+  isolated network the probe always times out after 1.5s, and it ran on every
+  share and status call.
+
+### Added
+
+- Expired shares are swept hourly (and by `ShareStore.cleanExpired()`), so a
+  snapshot with an expiry no longer lingers on disk until the next mutation.
+
+### Fixed
+
+- **A truncated private-key block is redacted again.** The rule had been narrowed
+  to match only well-formed blocks ending in `-----END ...-----`, so an
+  unterminated key — the common case when a session was trimmed or tool output
+  was cut — passed through unmasked. The `|$` alternative is restored and
+  covered by a regression test.
+
 ## [0.3.3] - 2026-10-14
 
 ### Added
@@ -90,7 +124,8 @@ package was published.
 - Share pages are readable by default: prompts and the final answer only, with
   tool calls, injected context and stats opt-in behind `technicalInfo`.
 
-[Unreleased]: https://github.com/snailium/dsh-share-plus/compare/v0.3.3...HEAD
+[Unreleased]: https://github.com/snailium/dsh-share-plus/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/snailium/dsh-share-plus/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/snailium/dsh-share-plus/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/snailium/dsh-share-plus/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/snailium/dsh-share-plus/compare/v0.3.0...v0.3.1

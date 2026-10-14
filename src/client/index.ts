@@ -1,5 +1,5 @@
 /**
- * dsh-share — Client half (installed package bundle entry).
+ * dsh-share-plus — Client half (installed package bundle entry).
  *
  * Registers two things:
  *   - a "分享/Share" button in the session header's utility row
@@ -9,7 +9,7 @@
  *     read-only directory mounts.
  *
  * Both halves talk to the Host over the generic Connection RPC channel
- * `/dsh-share`.
+ * `/dsh-share-plus`.
  */
 
 import { DICT_EN, DICT_ZH } from './i18n'
@@ -21,25 +21,25 @@ import { makeMountsCard } from './components/settingsCard'
 import { React, h } from './react'
 
 /** Loader entry id — also the settings namespace and the row id. */
-const ENTRY_ID = 'dsh-share'
+const ENTRY_ID = 'dsh-share-plus'
 /** Package name, used only to key the row's config slot. */
 const PACKAGE = 'dsh-share-plus'
 
 function apply(ctx: ClientCtx): void {
   ctx.effect(() => {
-    return ctx.locale.register('dsh-share', { zh: DICT_ZH, en: DICT_EN })
-  }, 'dsh-share: dictionaries')
-  const t = ctx.locale.bind('dsh-share')
+    return ctx.locale.register('dsh-share-plus', { zh: DICT_ZH, en: DICT_EN })
+  }, 'dsh-share-plus: dictionaries')
+  const t = ctx.locale.bind('dsh-share-plus')
 
   ctx.effect(() => {
     const tag = document.createElement('style')
-    tag.setAttribute('data-plugin', 'dsh-share')
+    tag.setAttribute('data-plugin', 'dsh-share-plus')
     tag.textContent = STYLES
     document.head.appendChild(tag)
     return () => {
       if (tag.parentNode !== null) tag.parentNode.removeChild(tag)
     }
-  }, 'dsh-share: styles')
+  }, 'dsh-share-plus: styles')
 
   const ShareButton = makeShareButton(ctx, t)
   ctx.slots.inject('conversation.session.header.utilities', () => {
@@ -58,17 +58,17 @@ function apply(ctx: ClientCtx): void {
     ctx.configForms.whileServed([ENTRY_ID], () =>
       ctx.slots.inject('plugins.row.config', () =>
         ctx.slots.register(
-          { name: 'plugins.row.config', key: `${PACKAGE}#${ENTRY_ID}`, locale: 'dsh-share' },
+          { name: 'plugins.row.config', key: `${PACKAGE}#${ENTRY_ID}`, locale: 'dsh-share-plus' },
           props => h(MountsCard, props as { view?: string }),
         ),
       ),
     )
     return () => {}
-  }, 'dsh-share: settings card')
+  }, 'dsh-share-plus: settings card')
 }
 
-module.exports = {
-  name: 'dsh-share',
+export default {
+  name: 'dsh-share-plus',
   inject: ['connection', 'slots', 'locale', 'configForms'],
   apply,
 }

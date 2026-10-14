@@ -1,6 +1,6 @@
 {
   "name": "dsh-share-plus",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "description": "Session share plugin for DeepSeek Harness: share a frozen, redacted transcript snapshot as a readable web page over LAN or a public domain.",
   "author": "gwang",
   "contributors": [

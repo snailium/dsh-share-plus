@@ -2,7 +2,7 @@
  * ShareButton — the session-header share control and its dialog.
  *
  * Registered into `conversation.session.header.utilities` (beside the official
- * "Session log" export action). It drives the Host `/dsh-share` RPC to create,
+ * "Session log" export action). It drives the Host `/dsh-share-plus` RPC to create,
  * list, and revoke read-only LAN snapshots.
  */
 
@@ -65,7 +65,7 @@ export function makeShareButton(ctx: ClientCtx, t: Translate): (props: ShareButt
     const [copied, setCopied] = React.useState<string | null>(null)
 
     const rpc = async <T,>(endpoint: string, payload: unknown): Promise<T> => {
-      const res = await ctx.connection.rpc.call('/dsh-share', endpoint, payload)
+      const res = await ctx.connection.rpc.call('/dsh-share-plus', endpoint, payload)
       if (res === null || typeof res !== 'object') throw new Error('no response')
       if (res.ok) return res.value as T
       throw new Error(res.error?.message ?? res.error?.code ?? 'failed')

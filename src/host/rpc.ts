@@ -1,10 +1,10 @@
 /**
- * dsh-share — Connection RPC channel registration (host half).
+ * dsh-share-plus — Connection RPC channel registration (host half).
  *
  * WHY THIS EXISTS INSTEAD OF `ctx.connection.rpc.handle()`
  * --------------------------------------------------------
  * The harness ships a generic channel registry, `ctx.connection.rpc.handle()`,
- * and that is the obvious way to expose `/dsh-share`. It does not work from a
+ * and that is the obvious way to expose `/dsh-share-plus`. It does not work from a
  * profile patch-layer plugin on dsh 0.2 / cordis as currently composed:
  *
  *   HostConnectionService#register() ends with
@@ -149,7 +149,7 @@ function sendFailure(res: NodeResponse, rpcId: string, status: number, code: str
  */
 export function registerRpcChannel(ctx: Context, channel: string, handler: RpcHandler): void {
   if (!CHANNEL_PATTERN.test(channel)) {
-    throw new Error(`dsh-share: invalid RPC channel ${JSON.stringify(channel)}`)
+    throw new Error(`dsh-share-plus: invalid RPC channel ${JSON.stringify(channel)}`)
   }
 
   ctx.inject(['connection', 'webServer'], (rpcCtx: Context) => {
@@ -239,7 +239,7 @@ export function registerRpcChannel(ctx: Context, channel: string, handler: RpcHa
             sendJson(res, 200, { type: 'server-response', rpcId, result })
           },
         }),
-      `dsh-share: rpc channel ${channel}`,
+      `dsh-share-plus: rpc channel ${channel}`,
     )
   })
 }

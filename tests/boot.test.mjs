@@ -61,7 +61,7 @@ async function mountPlugin() {
 
   const rpc = async (endpoint, payload) => {
     const rpcId = randomUUID()
-    const res = await fetch(`http://127.0.0.1:${rpcServer.address().port}/dsh-share/${endpoint}`, {
+    const res = await fetch(`http://127.0.0.1:${rpcServer.address().port}/dsh-share-plus/${endpoint}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ type: 'client-request', rpcId, method: endpoint, payload }),
@@ -96,7 +96,7 @@ const portOf = (share) => new URL(share.url).port
   await mkdir(dir, { recursive: true })
   const token = 'a'.repeat(32)
   await writeFile(
-    join(dir, 'dsh-share.json'),
+    join(dir, 'dsh-share-plus.json'),
     JSON.stringify({ version: 1, shares: [seededShare(token, 's-boot')] }),
     'utf8',
   )

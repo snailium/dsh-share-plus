@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Functional smoke test for the packaged host half: mounts the plugin on a
- * fake ctx that mimics the real service contract, drives the `/dsh-share`
+ * fake ctx that mimics the real service contract, drives the `/dsh-share-plus`
  * Connection RPC channel over REAL HTTP (envelope, admission fence, unknown
  * routes), and asserts transcript folding, snapshot serving, list, and revoke.
  * The share server binds 127.0.0.1 on an ephemeral port (port 0) and the store
@@ -60,6 +60,12 @@ const secrets = {
   winPath: 'C:\\Users\\gwang\\.env',
   privateIp: '192.168.111.101',
   privateKeyBlock: '-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA7v5x\n-----END RSA PRIVATE KEY-----',
+  // Regression: a TRUNCATED key block — the `-----END ...-----` line never
+  // arrived, because the session was trimmed or the tool output was cut. The
+  // rule must redact to the end of the text, not only well-formed blocks.
+  // Dropping the regex's `|$` branch made this leak silently, with every other
+  // assertion still green.
+  truncatedPrivateKey: '-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAAB',
 }
 const s3events = [
   { seq: 1, type: 'request/header', time: 1000, data: { header: { config: { model: '/home/gwang/models/private-ft.gguf', provider: 'internal-gw' }, system: 'sys', tools: [] } } },
@@ -77,6 +83,10 @@ const s3events = [
     { type: 'text', text: 'ran it' },
     { type: 'tool-result', callId: 'c9', content: [{ type: 'text', text: `env dump\nGITHUB_TOKEN=${secrets.githubPat}` }] },
   ] } }, surfaceOp: 'append' },
+  // LAST assistant message of the session, so the readable view keeps it. A
+  // truncated key block (no END line) must redact to end-of-text without
+  // swallowing the sentence before it.
+  { seq: 9, type: 'assistant/message', time: 7000, data: { message: { source: { kind: 'model' }, content: [{ type: 'text', text: `cut off here:\n${secrets.truncatedPrivateKey}` }] } }, surfaceOp: 'append' },
 ]
 
 // A session written by a FUTURE format: alongside ordinary v4 events it carries
@@ -124,7 +134,7 @@ const rpcPort = rpcServer.address().port
 const webServer = {
   register(route) {
     assert.equal(route.kind, 'prefix')
-    assert.equal(route.path, '/dsh-share')
+    assert.equal(route.path, '/dsh-share-plus')
     channelRoute = route
     return () => { channelRoute = null }
   },
@@ -165,7 +175,7 @@ assert.ok(channelRoute !== null, 'RPC channel route must be registered')
 /** Drive the channel exactly as the browser caller does. */
 async function callRpc(endpoint, payload) {
   const rpcId = randomUUID()
-  const res = await fetch(`http://127.0.0.1:${rpcPort}/dsh-share/${endpoint}`, {
+  const res = await fetch(`http://127.0.0.1:${rpcPort}/dsh-share-plus/${endpoint}`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ type: 'client-request', rpcId, method: endpoint, payload }),
@@ -330,6 +340,11 @@ for (const [label, raw] of Object.entries(secrets)) {
   }
 }
 assert.match(s3html, /«REDACTED»/, 'redaction marker present')
+// The truncation rule redacts from the BEGIN line to end-of-text, so it must
+// not reach BACKWARDS and swallow the sentence before the key.
+// (the sentence survives because the rule anchors forward from the BEGIN line;
+// asserting on the rendered text rather than on tag boundary keeps this honest)
+assert.match(s3html, /cut off here/, 'text before a truncated key is preserved')
 // The count lives on the RPC result (the dialog's job); the served page carries
 // a static redaction marker. Both must be present.
 assert.match(s3html, /已脱敏/ , 'redaction marker shown in page header')
@@ -376,7 +391,7 @@ assert.match(s2html, /执行时长<\/span><b>2s<\/b>/, 'duration is the active t
 assert.doesNotMatch(s2html, /1m 31s/, 'idle gap between turns is not counted')
 
 // -- oversized RPC bodies: refused up front, and the stream is torn down ----
-const declaredHuge = await fetch(`http://127.0.0.1:${rpcPort}/dsh-share/create`, {
+const declaredHuge = await fetch(`http://127.0.0.1:${rpcPort}/dsh-share-plus/create`, {
   method: 'POST',
   headers: { 'content-type': 'application/json', 'content-length': String(64 * 1024 * 1024) },
   body: '{}',
@@ -385,7 +400,7 @@ const declaredHuge = await fetch(`http://127.0.0.1:${rpcPort}/dsh-share/create`,
 // connection may be reset, which counts as refused.
 assert.ok(declaredHuge === null || declaredHuge.status === 413, 'a declared oversized body is refused')
 
-const streamedHuge = await fetch(`http://127.0.0.1:${rpcPort}/dsh-share/create`, {
+const streamedHuge = await fetch(`http://127.0.0.1:${rpcPort}/dsh-share-plus/create`, {
   method: 'POST',
   headers: { 'content-type': 'application/json' },
   body: JSON.stringify({ type: 'client-request', rpcId: 'big', method: 'create', payload: { sessionId: 'x'.repeat(1024 * 1024) } }),
@@ -436,13 +451,13 @@ assert.equal((await callRpc('list', {})).status, 401, 'unauthenticated request i
 fenceRejection = undefined
 
 // -- envelope and routing failures --
-const notPost = await fetch(`http://127.0.0.1:${rpcPort}/dsh-share/list`)
+const notPost = await fetch(`http://127.0.0.1:${rpcPort}/dsh-share-plus/list`)
 assert.equal(notPost.status, 404, 'non-POST is refused')
-const badJson = await fetch(`http://127.0.0.1:${rpcPort}/dsh-share/list`, {
+const badJson = await fetch(`http://127.0.0.1:${rpcPort}/dsh-share-plus/list`, {
   method: 'POST', headers: { 'content-type': 'application/json' }, body: 'not json',
 })
 assert.equal(badJson.status, 400, 'non-JSON body is refused')
-const badEnvelope = await fetch(`http://127.0.0.1:${rpcPort}/dsh-share/list`, {
+const badEnvelope = await fetch(`http://127.0.0.1:${rpcPort}/dsh-share-plus/list`, {
   method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ type: 'nope' }),
 })
 assert.equal(badEnvelope.status, 400, 'malformed envelope is refused')

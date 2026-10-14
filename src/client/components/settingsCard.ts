@@ -2,7 +2,7 @@
  * MountsCard — the plugin's settings card on the Plugins page.
  *
  * Registered into `plugins.row.config` keyed `<package name>#<row id>` (see
- * `../index.ts`), which is what gives the `dsh-share` row a **Configure**
+ * `../index.ts`), which is what gives the `dsh-share-plus` row a **Configure**
  * control. The page supplies the frame, so this component renders only the
  * form body, plus a one-line `summary` used as the row's description fallback.
  *
@@ -23,7 +23,7 @@ import type { Translate } from '../i18n'
 import { React, h } from '../react'
 
 /** The loader entry id — the settings namespace is always the row id. */
-const ENTRY_ID = 'dsh-share'
+const ENTRY_ID = 'dsh-share-plus'
 
 /** One staged row of the editor. */
 interface MountRow {
@@ -160,7 +160,7 @@ export function makeMountsCard(
 
     const refreshStatus = React.useCallback(() => {
       ctx.connection.rpc
-        .call('/dsh-share', 'mounts', {})
+        .call('/dsh-share-plus', 'mounts', {})
         .then((res) => {
           if (res !== null && typeof res === 'object' && res.ok) {
             setStatus(res.value as MountsResult)
@@ -409,6 +409,6 @@ export function makeMountsCard(
     }
     body.push(h('p', { key: 'foot', className: 'dshshare-card-note' }, t('cardReadOnlyNote')))
 
-    return h('div', { className: 'dshshare-card', 'data-plugin-config': 'dsh-share' }, ...body)
+    return h('div', { className: 'dshshare-card', 'data-plugin-config': 'dsh-share-plus' }, ...body)
   }
 }

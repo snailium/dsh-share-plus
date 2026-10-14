@@ -43,7 +43,7 @@
 - 🪗 **易读** — 长消息自动折叠为预览；连续的工具调用合并成一行「🛠 工具调用」分组。
 - 📊 **会话统计摘要** — 轮次、步数、执行时长、工具调用时长、缓存命中、输入/输出 tokens，以及当前上下文占用与分项构成条。
 - 🌗 **明暗主题** — 分享页跟随 `prefers-color-scheme`。
-- 💾 **重启后仍有效** — 分享持久化在 `$DSH_HOME/.dsh/dsh-share.json`，且只要有分享仍有效，服务器会在启动时重新绑定，因此已分享的链接不会因为 dsh 重启而失效。
+- 💾 **重启后仍有效** — 分享持久化在 `$DSH_HOME/.dsh/dsh-share-plus.json`，且只要有分享仍有效，服务器会在启动时重新绑定，因此已分享的链接不会因为 dsh 重启而失效。
 - 📡 **智能选局域网地址** — 过滤虚拟网卡（WSL / Hyper-V / Docker / VPN 等），并用路由探测把手机可达的 IP 排最前。
 
 ## 目录分享
@@ -63,7 +63,7 @@
 同样的内容也可以写在配置文件里：
 
 ```yaml
-- id: dsh-share
+- id: dsh-share-plus
   config:
     port: 3081
     mounts:
@@ -132,7 +132,7 @@
 也可以写在配置文件里：
 
 ```yaml
-- id: dsh-share
+- id: dsh-share-plus
   config:
     port: 3082
     technicalInfo: false   # 默认
@@ -173,7 +173,7 @@
 若要修改默认值，在 `cordis.patch.yml` 中给该插件的行加一段 `redact`：
 
 ```yaml
-- id: dsh-share
+- id: dsh-share-plus
   config:
     port: 3082
     redact:
@@ -196,12 +196,12 @@
 
 | 半部 | 运行位置 | 职责 |
 |------|----------|------|
-| Host（`src/host`） | Node（harness 进程） | 把会话事件日志折叠成脱敏后的转写 + 统计，存储冻结快照，并用独立的 `node:http` 服务器同时提供快照页与全部目录挂载；暴露 `/dsh-share` RPC（`create` / `revoke` / `list` / `mounts`）并声明设置 schema。 |
+| Host（`src/host`） | Node（harness 进程） | 把会话事件日志折叠成脱敏后的转写 + 统计，存储冻结快照，并用独立的 `node:http` 服务器同时提供快照页与全部目录挂载；暴露 `/dsh-share-plus` RPC（`create` / `revoke` / `list` / `mounts`）并声明设置 schema。 |
 | Client（`src/client`） | 浏览器 | 在 `conversation.session.header.utilities` 注册「分享」按钮与对话框，并在 `plugins.row.config` 注册本插件的设置卡以管理目录挂载。 |
 
 上下文构成的 token 估算复用 Harness 官方同款固定密度启发式（约 4 字符 ≈ 1 token），与 [`dsh-context`](https://github.com/bowenliang123/dsh-context) 一致。
 
-`/dsh-share` 通道是直接注册到注入的 web server 上的，而不是走 `ctx.connection.rpc.handle()`。原因见 `src/host/rpc.ts` 顶部的注释：在当前 dsh/cordis 的组合方式下，通用注册表在注册路由时解析到了错误的 context，导致整个 entry 激活失败。该通道沿用了 Connection 服务自身的 trusted-Host / 浏览器鉴权围栏，并使用相同的报文封装，因此与原生通道受到同等保护。
+`/dsh-share-plus` 通道是直接注册到注入的 web server 上的，而不是走 `ctx.connection.rpc.handle()`。原因见 `src/host/rpc.ts` 顶部的注释：在当前 dsh/cordis 的组合方式下，通用注册表在注册路由时解析到了错误的 context，导致整个 entry 激活失败。该通道沿用了 Connection 服务自身的 trusted-Host / 浏览器鉴权围栏，并使用相同的报文封装，因此与原生通道受到同等保护。
 
 ## 安装
 
@@ -230,6 +230,21 @@ dsh --profile web
 
 打开任意会话，点击头部的**分享**按钮即可。
 
+### 从 `dsh-share` 升级
+
+0.4.0 把 loader 行 id、设置命名空间、RPC 通道和存储文件名统一改成了 `dsh-share-plus`。
+有两处需要手动改，因为命名空间**就是**行 id，而存储文件名不会自动迁移：
+
+```bash
+# 1. profile 的 patch 层
+sed -i 's/^- id: dsh-share$/ - id: dsh-share-plus/' ~/.dsh/profiles/<name>/cordis.patch.yml
+
+# 2. 快照存储（保住已有分享）
+mv ~/.dsh/.dsh/dsh-share.json ~/.dsh/.dsh/dsh-share-plus.json
+```
+
+漏了第 1 步会丢掉该行的配置（`publicDomain`、`mounts`、`port`）；漏了第 2 步所有已有分享会 404。
+
 ### 兼容性
 
 本插件与 harness 的契约是**会话记录格式**，不是 harness 版本号。它只渲染 format 4
@@ -257,7 +272,7 @@ dsh --profile web
 
 ## 配置
 
-插件行（loader row）的 id 是 `dsh-share`。它从 `cordis.patch.yml`（或 profile 层）读取配置对象，未提供时回落到环境变量：
+插件行（loader row）的 id 是 `dsh-share-plus`。它从 `cordis.patch.yml`（或 profile 层）读取配置对象，未提供时回落到环境变量：
 
 | 配置项 | 环境变量回落 | 默认值 | 说明 |
 |--------|--------------|--------|------|
@@ -278,7 +293,7 @@ dsh --profile web
 
 - **主 Harness 始终只在回环地址**；从局域网可达的只有只读的分享面。
 - 分享 token 是 **128 位随机**（不可猜），并且可以被**撤销**或设为**过期**。
-- `/dsh-share` RPC 通道位于 Harness 的 trusted-Host/Origin 围栏与浏览器鉴权之后；未鉴权的调用返回 `401`。
+- `/dsh-share-plus` RPC 通道位于 Harness 的 trusted-Host/Origin 围栏与浏览器鉴权之后；未鉴权的调用返回 `401`。
 - 目录挂载是**只读的**，并且**逐请求**做包含性校验（穿越、符号链接逃逸、隐藏文件、非普通文件）；拒绝一律表现为 `404`。
 - 目录挂载**对任何能访问该端口的人开放**，除非你为它设置了 token。默认绑定 `0.0.0.0`，意味着整个局域网；若挂在隧道后面，就是整个互联网。任何你不愿公开的内容都请设置 token。
 - 目录内容**不脱敏** —— 只有会话快照脱敏。
@@ -303,7 +318,7 @@ pnpm typecheck   # 仅 tsc --noEmit
 src/
   shared/          # 两个半部共享的通信契约（仅类型）
   host/
-    index.ts       # /dsh-share 通道、Config schema、分享服务器生命周期
+    index.ts       # /dsh-share-plus 通道、Config schema、分享服务器生命周期
     rpc.ts         # 通道路由注册 + 报文封装
     redact.ts      # 有序、按类别的敏感信息脱敏
     mounts.ts      # 目录挂载：名称/路径校验 + 包含性

@@ -120,7 +120,14 @@ export function lanIPv4s(): string[] {
  * and settles — even on error — so a failed probe can never hang a share or
  * leak a UDP handle. Resolves undefined when no route can be determined.
  */
+let cachedLanIp: { ip: string | undefined; expiresAt: number } | undefined
+
 export function primaryLanIPv4(): Promise<string | undefined> {
+  const now = Date.now()
+  if (cachedLanIp !== undefined && cachedLanIp.expiresAt > now) {
+    return Promise.resolve(cachedLanIp.ip)
+  }
+
   return new Promise((resolve) => {
     let sock: import('node:dgram').Socket | undefined
     let settled = false
@@ -129,6 +136,8 @@ export function primaryLanIPv4(): Promise<string | undefined> {
       settled = true
       clearTimeout(timer)
       try { sock?.close() } catch { /* ignore */ }
+      // Cache for 30s so offline/isolated networks don't re-wait 1.5s on every share/status call
+      cachedLanIp = { ip: value, expiresAt: Date.now() + 30_000 }
       resolve(value)
     }
     const timer = setTimeout(() => done(undefined), 1500)

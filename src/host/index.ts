@@ -1,9 +1,9 @@
 /**
- * dsh-share — Host half (installed package entry).
+ * dsh-share-plus — Host half (installed package entry).
  *
  * A plain Cordis plugin module (ESM, zero runtime dependencies) loaded by the
- * harness as the `dsh-share` loader row. It owns:
- *   - a `/dsh-share` Connection RPC channel (create / revoke / list), and
+ * harness as the `dsh-share-plus` loader row. It owns:
+ *   - a `/dsh-share-plus` Connection RPC channel (create / revoke / list), and
  *   - a separate read-only `node:http` server bound to `0.0.0.0` that serves
  *     frozen transcript snapshots at `/s/<token>`.
  *
@@ -25,12 +25,12 @@ import { ShareStore, type ShareEntry } from './store'
 import { lanIPv4s, primaryLanIPv4, startShareServer, type ShareServerHandle } from './server'
 import { resolveMounts, type MountSpec, type ResolvedMounts } from './mounts'
 
-export const name = 'dsh-share'
+export const name = 'dsh-share-plus'
 
 /**
  * Required services. `connection` supplies the request admission fence
  * (trusted Host/Origin + browser authentication) and `webServer` hosts the
- * plugin's `/dsh-share` channel route; both are hard dependencies because this
+ * plugin's `/dsh-share-plus` channel route; both are hard dependencies because this
  * is a web-only plugin. See `./rpc.ts` for why the route is registered here
  * rather than through `connection.rpc.handle()`.
  */
@@ -273,11 +273,11 @@ export function apply(ctx: Context, config?: ShareConfig): void {
     }
   }
 
-  // The `/dsh-share` Connection RPC channel. See `./rpc` for why this registers
+  // The `/dsh-share-plus` Connection RPC channel. See `./rpc` for why this registers
   // the channel route directly on the web server instead of going through
   // `ctx.connection.rpc.handle()`, which cannot work from a patch-layer plugin
   // on this dsh version.
-  registerRpcChannel(ctx, '/dsh-share', async (endpoint: string, payload: unknown): Promise<RpcResult<unknown>> => {
+  registerRpcChannel(ctx, '/dsh-share-plus', async (endpoint: string, payload: unknown): Promise<RpcResult<unknown>> => {
     try {
       switch (endpoint) {
         case 'create': {
@@ -392,7 +392,7 @@ export function apply(ctx: Context, config?: ShareConfig): void {
   // effect above).
   ctx.effect(() => () => {
     void serverHandle?.close()
-  }, 'dsh-share: share server lifecycle')
+  }, 'dsh-share-plus: share server lifecycle')
 
   // Start the share server at activation as soon as there is ANYTHING to
   // serve — a configured directory mount, or a share already in the store.
@@ -411,7 +411,15 @@ export function apply(ctx: Context, config?: ShareConfig): void {
       // the state and the next share attempt retries.
     })
     return () => {}
-  }, 'dsh-share: eager share server')
+  }, 'dsh-share-plus: eager share server')
+
+  // Hourly background cleanup for expired shares so stale snapshots don't linger on disk.
+  ctx.effect(() => {
+    const timer = setInterval(() => {
+      void store.cleanExpired()
+    }, 60 * 60 * 1000)
+    return () => clearInterval(timer)
+  }, 'dsh-share-plus: prune expired timer')
 }
 
 // ---- public type surface (stable for downstream consumers) -------------------

@@ -43,7 +43,7 @@ The main harness keeps listening on `127.0.0.1` (and so never exposes the agent'
 - 🪗 **Readable** — long messages auto-fold behind a preview; consecutive tool calls collapse into one "🛠 tool calls" group.
 - 📊 **Session stats header** — turns, steps, wall-clock duration, tool-call time, cache hits, input/output tokens, and current context occupancy.
 - 🌗 **Dark & light theme** — the share pages follow `prefers-color-scheme`.
-- 💾 **Survives restarts** — shares are stored in `$DSH_HOME/.dsh/dsh-share.json`, and the server rebinds at boot while any of them is live, so an already-shared link does not go dark when dsh restarts.
+- 💾 **Survives restarts** — shares are stored in `$DSH_HOME/.dsh/dsh-share-plus.json`, and the server rebinds at boot while any of them is live, so an already-shared link does not go dark when dsh restarts.
 - 📡 **Smart LAN address** — filters out virtual adapters (WSL / Hyper-V / Docker / VPN / …) and probes the default route so the phone-reachable IP is listed first.
 
 ## Directory shares
@@ -63,7 +63,7 @@ The card shows each mount's live state and the URL to copy; a path that does not
 The same thing from a config file:
 
 ```yaml
-- id: dsh-share
+- id: dsh-share-plus
   config:
     port: 3081
     mounts:
@@ -132,7 +132,7 @@ Two places control it:
 From a config file:
 
 ```yaml
-- id: dsh-share
+- id: dsh-share-plus
   config:
     port: 3082
     technicalInfo: false   # default
@@ -173,7 +173,7 @@ The dialog's **"Redact secrets (keys, local paths, etc.) before sharing"** check
 To change the defaults, add a `redact` block to the plugin's row in `cordis.patch.yml`:
 
 ```yaml
-- id: dsh-share
+- id: dsh-share-plus
   config:
     port: 3082
     redact:
@@ -198,12 +198,12 @@ With technical output **on**, an interim assistant message is dropped when a lat
 
 | Half | Runs in | Role |
 |------|---------|------|
-| Host (`src/host`) | Node (harness process) | Folds the session event log into a redacted transcript + stats, stores the frozen snapshot, and serves it (plus every directory mount) over a separate `node:http` server. Exposes a `/dsh-share` RPC (`create` / `revoke` / `list` / `mounts`) and declares the settings schema. |
+| Host (`src/host`) | Node (harness process) | Folds the session event log into a redacted transcript + stats, stores the frozen snapshot, and serves it (plus every directory mount) over a separate `node:http` server. Exposes a `/dsh-share-plus` RPC (`create` / `revoke` / `list` / `mounts`) and declares the settings schema. |
 | Client (`src/client`) | Browser | Registers the **Share** button in `conversation.session.header.utilities` with its dialog, and the plugin's settings card in `plugins.row.config` for managing directory mounts. |
 
 Token estimation for the context composition reuses the harness's own fixed-density heuristic (~4 chars ≈ 1 token), matching [`dsh-context`](https://github.com/bowenliang123/dsh-context).
 
-The `/dsh-share` channel is registered directly on the injected web server rather than through `ctx.connection.rpc.handle()`. See the header comment in `src/host/rpc.ts` for why: on the current dsh/cordis composition the generic registry resolves the wrong context when it registers its route, so the entry fails to activate. The channel applies the Connection service's own trusted-Host/browser-auth fence and speaks the same wire envelope, so it is exactly as protected as a native channel.
+The `/dsh-share-plus` channel is registered directly on the injected web server rather than through `ctx.connection.rpc.handle()`. See the header comment in `src/host/rpc.ts` for why: on the current dsh/cordis composition the generic registry resolves the wrong context when it registers its route, so the entry fails to activate. The channel applies the Connection service's own trusted-Host/browser-auth fence and speaks the same wire envelope, so it is exactly as protected as a native channel.
 
 ## Install
 
@@ -231,6 +231,23 @@ dsh --profile web
 ```
 
 Open any session and click **Share** in the header.
+
+### Upgrading from a `dsh-share` install
+
+0.4.0 renamed the loader row, the settings namespace, the RPC channel and the
+store file to `dsh-share-plus`. Two things must be renamed by hand, because the
+namespace IS the row id and the store filename is not migrated automatically:
+
+```bash
+# 1. the profile's patch layer
+sed -i 's/^- id: dsh-share$/ - id: dsh-share-plus/' ~/.dsh/profiles/<name>/cordis.patch.yml
+
+# 2. the snapshot store (keeps existing shares alive)
+mv ~/.dsh/.dsh/dsh-share.json ~/.dsh/.dsh/dsh-share-plus.json
+```
+
+Skipping step 1 loses the row's configuration (its `publicDomain`, `mounts`,
+`port`); skipping step 2 makes every existing share 404.
 
 ### Compatibility
 
@@ -262,7 +279,7 @@ The share server binds at boot as soon as there is **anything to serve** — a s
 
 ## Configuration
 
-The plugin row is `dsh-share`. It reads a config object from `cordis.patch.yml` (or the profile layer), falling back to environment variables:
+The plugin row is `dsh-share-plus`. It reads a config object from `cordis.patch.yml` (or the profile layer), falling back to environment variables:
 
 | Setting | Env fallback | Default | Description |
 |---------|--------------|---------|-------------|
@@ -283,7 +300,7 @@ Precedence is **config > environment variable > default**. `host` and `port` are
 
 - The **main harness stays loopback-only**; only the read-only share surface is reachable from the LAN.
 - Share tokens are **128-bit random** (unguessable) and can be **revoked** or set to **expire**.
-- The `/dsh-share` RPC channel sits behind the harness's trusted-Host/Origin fence and browser authentication; unauthenticated callers get `401`.
+- The `/dsh-share-plus` RPC channel sits behind the harness's trusted-Host/Origin fence and browser authentication; unauthenticated callers get `401`.
 - Directory mounts are **read-only and containment-checked per request** (traversal, symlink escape, dotfiles, non-regular files). A denial is always reported as `404`.
 - A directory mount is **open to anyone who can reach the port** unless you set a token on it. With the default `0.0.0.0` bind, that means the whole LAN; behind a tunnel, the whole internet. Set a token for anything you would not post publicly.
 - Directory content is **not redacted** — only session snapshots are.
@@ -308,7 +325,7 @@ pnpm typecheck   # tsc --noEmit only
 src/
   shared/          # wire contract shared by both halves (type-only)
   host/
-    index.ts       # /dsh-share channel, Config schema, share-server lifecycle
+    index.ts       # /dsh-share-plus channel, Config schema, share-server lifecycle
     rpc.ts         # channel route registration + wire envelope
     redact.ts      # ordered, per-class secret redaction
     mounts.ts      # directory mounts: name/path validation + containment

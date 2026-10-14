@@ -53,6 +53,11 @@ const SECRET_KEY = '(?:[A-Z0-9_]*(?:PASSWORD|PASSWD|SECRET|TOKEN|API_KEY|APIKEY|
 
 /** Ordered rule list: earlier rules win (a JWT contains 'eyJ'; a key block spans newlines). */
 const RULES: { cls: RedactClass; re: RegExp }[] = [
+  // The `|$` alternative is load-bearing: a TRUNCATED key block — one whose
+  // `-----END ...-----` line never arrived, because the session was trimmed or
+  // the tool output was cut — still leaks the key material if the rule only
+  // matches well-formed blocks. An unterminated block therefore redacts to the
+  // end of the text.
   { cls: 'privateKey', re: /-----BEGIN [A-Z0-9 ]*PRIVATE KEY(?: BLOCK)?-----[\s\S]*?(?:-----END [A-Z0-9 ]*PRIVATE KEY(?: BLOCK)?-----|$)/g },
   // A JWT's first segment is base64url of `{"…`, i.e. it always begins `eyJ`.
   // Anchoring on that keeps ordinary dotted names (`file.tar.gz`) intact.

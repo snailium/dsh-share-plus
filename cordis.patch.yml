@@ -1,4 +1,4 @@
-# dsh-share — bundle patch layer.
+# dsh-share-plus — bundle patch layer.
 #
 # Installing this package into a profile (`dsh plugin --profile <name> add dsh-share-plus`)
 # appends it to `dsh.profile.bundles`; this patch is then applied as that
@@ -6,5 +6,5 @@
 # half (a plain Cordis plugin) and, because the package declares `dsh.client`,
 # the web app also loads its `./client` bundle as the browser half.
 - insert:
-    - id: dsh-share
+    - id: dsh-share-plus
       name: 'dsh-share-plus'

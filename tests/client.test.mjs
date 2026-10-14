@@ -35,11 +35,10 @@ const requireFn = (spec) => {
   if (spec === 'react') return React
   throw new Error(`unexpected module: ${spec}`)
 }
-const start = bundle.indexOf('factory: (require) => {') + 'factory: (require) => {'.length
-const end = bundle.indexOf('    return module.exports;')
-const factory = new Function('require', 'module', 'window', 'document', bundle.slice(start, end) + '\n    return module.exports;')
-const m = { exports: {} }
-const plugin = factory(requireFn, m, globalThis.window, dom.window.document)
+// Execute the bundle so it invokes window.__ModuleLoader__.load({...})
+new Function('window', 'document', bundle)(globalThis.window, dom.window.document)
+assert.ok(handoff !== null && typeof handoff.factory === 'function', 'handoff registered factory')
+const plugin = handoff.factory(requireFn)
 
 const tick = (ms = 30) => new Promise((r) => setTimeout(r, ms))
 
@@ -134,7 +133,7 @@ assert.ok(cardReg !== undefined, 'settings card registered')
 
 // The keyed slot's key fails silently when wrong, so pin both literals: the
 // package name from package.json and the row id from cordis.patch.yml.
-assert.equal(cardReg.opts.key, `${pkg.name}#dsh-share`, 'card key must be <package name>#<row id>')
+assert.equal(cardReg.opts.key, `${pkg.name}#dsh-share-plus`, 'card key must be <package name>#<row id>')
 assert.match(pkg.dsh.bundle.patch, /cordis\.patch\.yml/)
 
 // ---- share button: render, dialog, create payload ----
@@ -151,7 +150,7 @@ assert.equal(button.textContent, 'button', 'button label from bound locale')
 button.click()
 await tick(20)
 assert.ok(container.querySelector('.dshshare-overlay') !== null, 'dialog opened')
-assert.ok(rpcCalls.some((c) => c.channel === '/dsh-share' && c.endpoint === 'list'), 'list RPC called on open')
+assert.ok(rpcCalls.some((c) => c.channel === '/dsh-share-plus' && c.endpoint === 'list'), 'list RPC called on open')
 
 const redactBox = container.querySelector('#dshshare-redact')
 assert.ok(redactBox !== null, 'redact checkbox present')
@@ -165,13 +164,13 @@ const gen = container.querySelector('.dshshare-primary')
 assert.ok(gen !== null, 'generate button present')
 gen.click()
 await tick(20)
-const createCall = rpcCalls.find((c) => c.channel === '/dsh-share' && c.endpoint === 'create')
+const createCall = rpcCalls.find((c) => c.channel === '/dsh-share-plus' && c.endpoint === 'create')
 assert.ok(createCall !== undefined, 'create RPC called')
 assert.deepEqual(createCall.payload.redact, { enabled: true }, 'redact flag sent with create')
 // Technical output is off by default and the dialog must say so explicitly.
 assert.equal(createCall.payload.technical, false, 'technical flag sent with create, defaulting to false')
 assert.ok(
-  rpcCalls.some((c) => c.channel === '/dsh-share' && c.endpoint === 'defaults'),
+  rpcCalls.some((c) => c.channel === '/dsh-share-plus' && c.endpoint === 'defaults'),
   'dialog seeds its toggles from the Host defaults',
 )
 const urlRows = container.querySelectorAll('.dshshare-url')
@@ -199,7 +198,7 @@ assert.equal(pathInput.value, '/srv/app/release', 'saved mount path seeded')
 // Live status comes from the Host, including the copyable URL.
 await tick(20)
 assert.ok(
-  rpcCalls.some((c) => c.channel === '/dsh-share' && c.endpoint === 'mounts'),
+  rpcCalls.some((c) => c.channel === '/dsh-share-plus' && c.endpoint === 'mounts'),
   'card asks the Host for mount status',
 )
 const mountUrls = cardContainer.querySelectorAll('.dshshare-mount-url code')

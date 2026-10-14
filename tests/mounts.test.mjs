@@ -102,7 +102,7 @@ apply(ctx, {
 
 async function rpc(endpoint, payload) {
   const rpcId = randomUUID()
-  const res = await fetch(`http://127.0.0.1:${rpcPort}/dsh-share/${endpoint}`, {
+  const res = await fetch(`http://127.0.0.1:${rpcPort}/dsh-share-plus/${endpoint}`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ type: 'client-request', rpcId, method: endpoint, payload }),

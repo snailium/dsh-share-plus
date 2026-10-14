@@ -245,7 +245,7 @@ export function renderShareHtml(data: SharePageData): string {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>${escapeHtml(data.title)} · dsh-share</title>
+<title>${escapeHtml(data.title)} · dsh-share-plus</title>
 <style>
   /*
    * Styling mirrors the harness chat itself: the same font stack, the same
@@ -420,7 +420,7 @@ export function renderShareHtml(data: SharePageData): string {
 ${stats}
 ${body}
 </main>
-<footer>由 dsh-share 生成 · 只读快照</footer>
+<footer>由 dsh-share-plus 生成 · 只读快照</footer>
 </body>
 </html>`
 }
