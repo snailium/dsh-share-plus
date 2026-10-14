@@ -59,6 +59,10 @@ export const STYLES = `
 .dshshare-card h4 { margin: 18px 0 8px; font-size: 13px; font-weight: 600; color: var(--dsw-alias-label-secondary); }
 
 .dshshare-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.dshshare-redact { align-items: flex-start; }
+.dshshare-redact input { margin-top: 3px; }
+.dshshare-redact label { font-size: 12px; color: var(--dsw-alias-label-secondary); line-height: 1.4; cursor: pointer; }
+.dshshare-redact-note { font-size: 12px; color: var(--dsw-alias-state-warning-primary, #d97706); margin-bottom: 8px; }
 .dshshare-expiry { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
 .dshshare-seg {
   border: 1px solid var(--dsw-alias-border-l2);
@@ -112,4 +116,61 @@ export const STYLES = `
   position: absolute; top: 12px; right: 12px; border: none; background: transparent;
   color: var(--dsw-alias-label-secondary); font-size: 18px; cursor: pointer; line-height: 1;
 }
+
+/* ---- settings card: directory mounts ---- */
+.dshshare-card { display: flex; flex-direction: column; gap: 10px; }
+/* label-dimmed resolves to #e1e5ee in the light theme — invisible on the card
+   surface — so hint copy uses the tertiary label token instead. */
+.dshshare-card-hint { margin: 0; font-size: 12px; line-height: 1.6; color: var(--dsw-alias-label-tertiary); }
+.dshshare-card-note { margin: 0; font-size: 11px; line-height: 1.6; color: var(--dsw-alias-label-tertiary); }
+.dshshare-card-domain { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.dshshare-card-domain > span { white-space: nowrap; }
+.dshshare-domain-input { flex: 1; min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; padding: 6px 8px; border-radius: 6px; }
+.dshshare-card-toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 500; color: var(--dsw-alias-label-primary); cursor: pointer;
+}
+.dshshare-card-error { margin: 0; font-size: 12px; color: var(--dsw-alias-state-error-primary); }
+.dshshare-mount {
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px; padding: 10px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.dshshare-mount-fields { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.dshshare-input {
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-primary);
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 6px; padding: 6px 8px; font-size: 12px;
+  font-family: var(--dsw-font-family, inherit);
+}
+.dshshare-mount-name { width: 120px; }
+.dshshare-mount-path {
+  flex: 1; min-width: 200px;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+.dshshare-mount-token { width: 150px; }
+.dshshare-mount-flag {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; color: var(--dsw-alias-label-secondary); cursor: pointer; white-space: nowrap;
+}
+.dshshare-mount-url {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-size: 11px; color: var(--dsw-alias-label-dimmed);
+}
+.dshshare-mount-url code {
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  background: var(--dsw-alias-bg-layer-1);
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 4px; padding: 2px 6px;
+  word-break: break-all;
+}
+.dshshare-card-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.dshshare-link {
+  border: none; background: transparent; cursor: pointer; padding: 4px 6px;
+  color: var(--dsw-alias-label-secondary); font-size: 12px;
+  font-family: var(--dsw-font-family, inherit); border-radius: 4px;
+}
+.dshshare-link:hover { color: var(--dsw-alias-label-primary); background: var(--dsw-alias-bg-layer-1); }
+.dshshare-link:disabled { opacity: .5; cursor: default; }
 `

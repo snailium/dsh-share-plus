@@ -1,18 +1,29 @@
 /**
  * dsh-share — Client half (installed package bundle entry).
  *
- * Registers a "分享/Share" button in the session header's utility row
- * (`conversation.session.header.utilities`, beside the official Session-log
- * export action) and renders the share dialog. Data flows over the generic
- * Connection RPC channel `/dsh-share` served by the Host half.
+ * Registers two things:
+ *   - a "分享/Share" button in the session header's utility row
+ *     (`conversation.session.header.utilities`, beside the official Session-log
+ *     export action), with its dialog; and
+ *   - the plugin's settings card on the Plugins page, which manages the
+ *     read-only directory mounts.
+ *
+ * Both halves talk to the Host over the generic Connection RPC channel
+ * `/dsh-share`.
  */
 
 import { DICT_EN, DICT_ZH } from './i18n'
 import type { ClientCtx } from './services'
 import { STYLES } from './styles'
 import { makeShareButton } from './components/shareButton'
+import { makeMountsCard } from './components/settingsCard'
 
 import { React, h } from './react'
+
+/** Loader entry id — also the settings namespace and the row id. */
+const ENTRY_ID = 'dsh-share'
+/** Package name, used only to key the row's config slot. */
+const PACKAGE = 'dsh-share-plus'
 
 function apply(ctx: ClientCtx): void {
   ctx.effect(() => {
@@ -34,13 +45,30 @@ function apply(ctx: ClientCtx): void {
   ctx.slots.inject('conversation.session.header.utilities', () => {
     return ctx.slots.register(
       { name: 'conversation.session.header.utilities', id: 'session-share', order: 10, label: () => t('button') },
-      props => h(ShareButton, props),
+      props => h(ShareButton, props as { sessionId?: string }),
     )
   })
+
+  // The settings card. `plugins.row.config` keyed `<package>#<row id>` is the
+  // slot a third-party bundle uses for its own row, and the exact key is what
+  // makes the row grow a "Configure" control — a wrong key fails silently, so
+  // the test suite pins both literals against package.json and the patch.
+  const MountsCard = makeMountsCard(ctx, t)
+  ctx.effect(() => {
+    ctx.configForms.whileServed([ENTRY_ID], () =>
+      ctx.slots.inject('plugins.row.config', () =>
+        ctx.slots.register(
+          { name: 'plugins.row.config', key: `${PACKAGE}#${ENTRY_ID}`, locale: 'dsh-share' },
+          props => h(MountsCard, props as { view?: string }),
+        ),
+      ),
+    )
+    return () => {}
+  }, 'dsh-share: settings card')
 }
 
 module.exports = {
   name: 'dsh-share',
-  inject: ['connection', 'slots', 'locale'],
+  inject: ['connection', 'slots', 'locale', 'configForms'],
   apply,
 }

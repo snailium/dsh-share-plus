@@ -12,6 +12,7 @@
 
 import type { TranscriptEntry, TranscriptRole } from '../shared/types'
 import type { SessionEvent } from './services'
+import { redactText, type RedactOptions } from './redact'
 
 interface ContentBlock {
   type?: string
@@ -21,17 +22,31 @@ interface ContentBlock {
   callId?: string
 }
 
-/** First non-empty text across a content array (walking nested tool results). */
-function firstText(content: unknown): string {
+/**
+ * First non-empty text across a content array.
+ *
+ * `walkToolResults` controls whether the search recurses into embedded
+ * tool-result blocks. The user/assistant message paths pass `false`: raw
+ * command output (a `cat .env`, a DB dump) must never leak into a share
+ * snapshot through this side channel — the dedicated `tool/result` events are
+ * already collapsed to name-only lines. Context-injection text still walks,
+ * since injected notes are legitimate conversation surface.
+ */
+function firstText(content: unknown, walkToolResults = true): string {
   if (!Array.isArray(content)) return ''
   for (const block of content) {
     if (block === null || typeof block !== 'object') continue
     const b = block as ContentBlock
     if (b.type === 'text' && typeof b.text === 'string' && b.text.trim() !== '') {
-      return b.text.replace(/\s+/g, ' ').trim()
+      // Preserve the author's line structure. Collapsing every whitespace run
+      // here (the original behaviour) destroyed newlines BEFORE Markdown ever
+      // saw the text, so multi-line prompts and answers rendered as one long
+      // run and no renderer setting could recover them. Only CRLF is
+      // normalised; the title flattens its own single line separately.
+      return b.text.replace(/\r\n?/g, '\n').trim()
     }
-    if (b.type === 'tool-result' || Array.isArray(b.content)) {
-      const nested = firstText(b.content)
+    if (walkToolResults && (b.type === 'tool-result' || Array.isArray(b.content))) {
+      const nested = firstText(b.content, true)
       if (nested !== '') return nested
     }
   }
@@ -59,7 +74,29 @@ function entry(role: TranscriptRole, ev: SessionEvent, fields: Partial<Transcrip
   return { role, time: ev.time, text: '', ...fields }
 }
 
-export function foldTranscript(events: readonly SessionEvent[]): TranscriptEntry[] {
+export interface FoldOptions {
+  /** Redaction options; default ON. Applied to every entry before returning. */
+  redact?: RedactOptions
+  /**
+   * Whether to keep the machine-facing parts of the session. Default `true`
+   * (the historical behaviour): tool calls/results, injected context, system
+   * notices and every assistant message.
+   *
+   * `false` produces a READABLE transcript: the prompts the user typed and the
+   * final answer of each turn, nothing else. In an agentic session the
+   * technical stream is thousands of lines of tool chatter that buries the
+   * actual exchange, so this is the default for a share.
+   */
+  technical?: boolean
+}
+
+/** Total number of redactions across all entries (for the "N items redacted" UI). */
+export interface FoldResult {
+  entries: TranscriptEntry[]
+  redactedCount: number
+}
+
+export function foldTranscript(events: readonly SessionEvent[], opts?: FoldOptions): FoldResult {
   // callId -> tool name, resolved from tool/call events.
   const callNames: Record<string, string> = {}
   for (const ev of events) {
@@ -78,21 +115,32 @@ export function foldTranscript(events: readonly SessionEvent[]): TranscriptEntry
     switch (ev.type) {
       case 'user/message': {
         const source = (data?.source ?? {}) as { kind?: string; name?: string; form?: string }
-        if (source.kind === 'plugin' || source.kind === 'skill-invocation') {
-          const label = source.kind === 'skill-invocation'
+        // Only `kind: 'user'` is something the human typed. Everything else is
+        // added by the harness: plugin notices, skill invocations, and the
+        // periodic `runtime-context` snapshot (sandbox/approval policy) which
+        // used to fall through and be shown as if the user had written it.
+        const kind = typeof source.kind === 'string' ? source.kind : 'user'
+        if (kind !== 'user') {
+          const label = kind === 'skill-invocation'
             ? `Skill: ${typeof source.name === 'string' ? source.name : '?'}`
-            : `上下文注入${typeof source.form === 'string' ? ` · ${source.form}` : ''}`
-          const text = firstText(data?.content)
-          out.push(entry('context', ev, { text: text !== '' ? text : label, tool: source.kind === 'skill-invocation' ? source.name : undefined }))
+            : kind === 'runtime-context'
+              ? '运行时上下文'
+              : kind === 'plugin'
+                ? `上下文注入${typeof source.form === 'string' ? ` · ${source.form}` : ''}`
+                : `上下文注入 · ${kind}`
+          const text = firstText(data?.content, true)
+          out.push(entry('context', ev, { text: text !== '' ? text : label, tool: kind === 'skill-invocation' ? source.name : undefined }))
         } else {
-          const text = firstText(data?.content)
+          // Option B: never pull embedded tool output into user text.
+          const text = firstText(data?.content, false)
           if (text !== '') out.push(entry('user', ev, { text }))
         }
         break
       }
       case 'assistant/message': {
         const message = (data?.message ?? {}) as { content?: unknown }
-        const text = firstText(message.content)
+        // Option B: never pull embedded tool output into assistant text.
+        const text = firstText(message.content, false)
         const calls = toolCallNames(message.content)
         if (text !== '') out.push(entry('assistant', ev, { text }))
         else if (calls.length > 0) out.push(entry('tool', ev, { calls }))
@@ -110,13 +158,57 @@ export function foldTranscript(events: readonly SessionEvent[]): TranscriptEntry
         break
     }
   }
-  return out
+
+  // "Readable" mode: keep the prompts and the answer that concluded each turn.
+  //
+  // Tool entries and context injections are dropped outright. Among the
+  // assistant messages of one turn, only the LAST one survives — an agentic
+  // turn emits a "let me check X" message before nearly every tool call, and
+  // keeping them all is what makes the page unreadable. A pending assistant
+  // message is flushed when the next prompt arrives, so the result reads as
+  // prompt → answer pairs in the original order.
+  if (opts?.technical === false) {
+    const kept: TranscriptEntry[] = []
+    let pendingAnswer: TranscriptEntry | null = null
+    for (const e of out) {
+      if (e.role === 'tool' || e.role === 'context') continue
+      if (e.role === 'assistant') {
+        pendingAnswer = e
+        continue
+      }
+      if (pendingAnswer !== null) {
+        kept.push(pendingAnswer)
+        pendingAnswer = null
+      }
+      kept.push(e)
+    }
+    if (pendingAnswer !== null) kept.push(pendingAnswer)
+    out.length = 0
+    out.push(...kept)
+  }
+
+  // Option A: redact every entry text before it can reach the snapshot (this
+  // also covers any text that still arrives via firstText). Redaction happens
+  // HERE, before deriveTitle, so the title inherits the masked text.
+  const redactOpts: RedactOptions = opts?.redact ?? { enabled: true }
+  let redactedCount = 0
+  if (redactOpts.enabled) {
+    for (const e of out) {
+      if (e.text === '') continue
+      const r = redactText(e.text, redactOpts)
+      e.text = r.text
+      redactedCount += r.count
+    }
+  }
+  return { entries: out, redactedCount }
 }
 
 /** A short display title: first real user message, else the session id. */
 export function deriveTitle(entries: TranscriptEntry[], sessionId: string): string {
   for (const e of entries) {
-    if (e.role === 'user' && e.text !== '') return e.text.slice(0, 40)
+    // The title is one line by definition, so flatten here rather than in
+    // firstText (which must keep the body's line structure intact).
+    if (e.role === 'user' && e.text !== '') return e.text.replace(/\s+/g, ' ').trim().slice(0, 40)
   }
   return `Session ${sessionId.slice(0, 8)}`
 }

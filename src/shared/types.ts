@@ -29,10 +29,12 @@ export interface ShareInfo {
   title: string
   createdAt: number
   expiresAt?: number
-  /** Primary URL (first LAN address, falling back to loopback). */
+  /** Primary URL, derived at read time from the current domain and bound port. */
   url: string
-  /** All candidate URLs (LAN addresses + loopback), for the picker. */
+  /** All candidate URLs (public domain first when set, then LAN), for the picker. */
   urls: string[]
+  /** Number of secret patterns redacted when this snapshot was frozen. */
+  redactedCount?: number
 }
 
 /** The six priced context buckets (system/tools + the four surface categories). */
@@ -75,3 +77,44 @@ export interface CreateResult {
 export interface ListResult {
   shares: ShareInfo[]
 }
+
+/**
+ * Effective defaults the dialog seeds its per-share toggles from, so a checkbox
+ * reflects the configured default instead of a hard-coded guess.
+ */
+export interface DefaultsResult {
+  /** Whether a new share includes technical output unless overridden. */
+  technical: boolean
+  /** Whether a new share redacts secrets unless overridden. */
+  redact: boolean
+}
+
+/**
+ * One configured directory mount as the settings card sees it: the configured
+ * values, whether the Host is actually serving it, and the URLs to copy.
+ */
+export interface MountView {
+  name: string
+  /** Path exactly as configured. */
+  path: string
+  /** Resolved absolute path when the mount is servable, else null. */
+  root: string | null
+  /** Whether a token is required (the token itself is never sent). */
+  token: boolean
+  index: boolean
+  hidden: boolean
+  status: 'serving' | 'invalid'
+  /** Why the mount is not being served, when `status` is 'invalid'. */
+  reason?: string
+  /** Reachable URLs, including the token segment when one is configured. */
+  urls: string[]
+}
+
+export interface MountsResult {
+  mounts: MountView[]
+  /** LAN addresses the URLs were built from, for display. */
+  lanIps: string[]
+  /** Set when the user configured a public domain; generated URLs lead with it. */
+  publicDomain?: string
+}
+

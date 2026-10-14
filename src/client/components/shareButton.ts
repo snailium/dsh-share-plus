@@ -56,6 +56,10 @@ export function makeShareButton(ctx: ClientCtx, t: Translate): (props: ShareButt
     const [busy, setBusy] = React.useState(false)
     const [error, setError] = React.useState<string | null>(null)
     const [expiry, setExpiry] = React.useState<string>('never')
+    const [redact, setRedact] = React.useState<boolean>(true)
+    // Technical output is OFF by default: an agentic transcript is mostly tool
+    // chatter, and a share is meant to be read.
+    const [technical, setTechnical] = React.useState<boolean>(false)
     const [shares, setShares] = React.useState<ShareInfo[]>([])
     const [created, setCreated] = React.useState<ShareInfo | null>(null)
     const [copied, setCopied] = React.useState<string | null>(null)
@@ -76,6 +80,16 @@ export function makeShareButton(ctx: ClientCtx, t: Translate): (props: ShareButt
       })
     }, [sessionId])
 
+    // Seed the toggles from the configured defaults once the dialog opens, so
+    // the checkboxes show what will actually happen rather than a fixed guess.
+    React.useEffect(() => {
+      if (!open) return
+      rpc<{ technical: boolean; redact: boolean }>('defaults', {}).then((d) => {
+        setTechnical(d.technical)
+        setRedact(d.redact)
+      }).catch(() => { /* keep the built-in defaults */ })
+    }, [open])
+
     React.useEffect(() => {
       if (open && sessionId !== '') refresh()
     }, [open, sessionId, refresh])
@@ -87,7 +101,7 @@ export function makeShareButton(ctx: ClientCtx, t: Translate): (props: ShareButt
       setBusy(true)
       setError(null)
       const sec = EXPIRIES.find((e) => e.key === expiry)?.sec
-      rpc<{ share: ShareInfo }>('create', { sessionId, expiresInSec: sec })
+      rpc<{ share: ShareInfo }>('create', { sessionId, expiresInSec: sec, redact: { enabled: redact }, technical })
         .then((r) => {
           setCreated(r.share)
           refresh()
@@ -114,8 +128,11 @@ export function makeShareButton(ctx: ClientCtx, t: Translate): (props: ShareButt
     const urlRow = (share: ShareInfo) => {
       const urls = share.urls && share.urls.length > 0 ? share.urls : [share.url]
       return h('div', null, urls.map((u, i) => {
-        const ip = u.replace(/^https?:\/\//, '').split('/')[0].split(':')[0]
-        const tag = isLan(ip) ? t('dialog.lan') : t('dialog.loopback')
+        const host = u.replace(/^https?:\/\//, '').split('/')[0].split(':')[0]
+        // A domain that is not an IP address is the configured public one.
+        const tag = host.includes('.') && !/^\d{1,3}(\.\d{1,3}){3}$/.test(host)
+          ? t('dialog.internet')
+          : isLan(host) ? t('dialog.lan') : t('dialog.loopback')
         const key = `${share.token}-${i}`
         return h('div', { className: 'dshshare-url', key },
           h('span', { className: 'tag' }, tag),
@@ -152,10 +169,32 @@ export function makeShareButton(ctx: ClientCtx, t: Translate): (props: ShareButt
               className: 'dshshare-seg' + (expiry === e.key ? ' dshshare-seg-on' : ''),
               onClick: () => setExpiry(e.key),
             }, t('dialog.expiry.' + e.key))))),
+        h('div', { className: 'dshshare-row dshshare-redact' },
+          h('input', {
+            id: 'dshshare-redact',
+            type: 'checkbox',
+            checked: redact,
+            onChange: (e: ReactNS.ChangeEvent<HTMLInputElement>) => setRedact(e.currentTarget.checked),
+          }),
+          h('label', { htmlFor: 'dshshare-redact' }, t('dialog.redact'))),
+        h('div', { className: 'dshshare-row dshshare-opt' },
+          h('input', {
+            id: 'dshshare-technical',
+            type: 'checkbox',
+            checked: technical,
+            onChange: (e: ReactNS.ChangeEvent<HTMLInputElement>) => setTechnical(e.currentTarget.checked),
+          }),
+          h('label', { htmlFor: 'dshshare-technical' }, t('dialog.technical'))),
         h('div', { className: 'dshshare-row' },
           h('button', { className: 'dshshare-primary', disabled: busy || sessionId === '', onClick: generate }, busy ? t('dialog.genBusy') : t('dialog.gen'))),
         created !== null ? h('div', null,
           h('h4', null, t('dialog.urlHint')),
+          created.redactedCount !== undefined
+            ? h('div', { className: 'dshshare-redact-note' },
+              created.redactedCount > 0
+                ? t('dialog.redactedCount', { n: created.redactedCount })
+                : t('dialog.redactedNone'))
+            : null,
           urlRow(created)) : null,
         h('h4', null, t('dialog.existing')),
         shares.length === 0

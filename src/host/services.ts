@@ -1,8 +1,12 @@
 /**
  * Host-side service contracts — the exact API surface this plugin consumes
  * from the harness. TYPE-ONLY: the runtime services come from the user's
- * harness. The `Context` augmentation below types `ctx.connection`,
- * `ctx.sessionQuery`, and `ctx.sessions` for the whole Host half.
+ * harness. The `Context` augmentation below types `ctx.sessionQuery` and
+ * `ctx.sessions` for the whole Host half.
+ *
+ * Note: this plugin deliberately does NOT consume `ctx.connection.rpc`. That
+ * registry cannot register a channel route from a profile patch-layer plugin on
+ * this dsh version — see the module comment in `./rpc.ts` for the full cause.
  */
 
 import type { Context } from '@deepseek-ai/cordis'
@@ -15,19 +19,6 @@ export interface SessionEvent {
   data?: unknown
   surfaceOp?: unknown
 }
-
-/** The generic Connection RPC channel registry (`ctx.connection.rpc`). */
-export interface HostConnectionRpc {
-  handle(
-    channel: string,
-    handler: (endpoint: string, payload: unknown, signal: AbortSignal) => Promise<RpcResult<unknown>>,
-    options: { authority: 'trusted-host' | 'loopback' },
-  ): () => Promise<void>
-}
-
-/** The harness RpcResult envelope ({ok:true,value} | {ok:false,error}). */
-export type RpcError = { code: string; message: string; details?: unknown }
-export type RpcResult<T> = { ok: true; value: T } | { ok: false; error: RpcError }
 
 /** The live-preferred session read service (`ctx.sessionQuery`). */
 export interface SessionQueryLike {
@@ -42,7 +33,6 @@ export interface SessionStoreLike {
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
-    connection: { rpc: HostConnectionRpc }
     sessionQuery?: SessionQueryLike
     sessions?: SessionStoreLike
   }

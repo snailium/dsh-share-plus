@@ -1,16 +1,11 @@
 {
-  "name": "@zljr/dsh-share",
-  "version": "0.1.1",
-  "description": "Session share plugin for DeepSeek Harness: generate a read-only LAN share link (frozen transcript snapshot) for the current session.",
-  "author": "zljr",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/zljr/dsh-share.git"
-  },
-  "homepage": "https://github.com/zljr/dsh-share#readme",
-  "bugs": {
-    "url": "https://github.com/zljr/dsh-share/issues"
-  },
+  "name": "dsh-share-plus",
+  "version": "0.3.1",
+  "description": "Session share plugin for DeepSeek Harness: generate a read-only LAN share link (frozen transcript snapshot) with best-effort secret redaction.",
+  "author": "gwang",
+  "contributors": [
+    "zljr (upstream @zljr/dsh-share, MIT)"
+  ],
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -28,7 +23,7 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "npm run typecheck && node tests/host.test.mjs && node tests/client.test.mjs",
+    "test": "npm run build && npm run typecheck && node tests/host.test.mjs && node tests/mounts.test.mjs && node tests/boot.test.mjs && node tests/client.test.mjs",
     "prepublishOnly": "npm run build"
   },
   "dsh": {
@@ -51,7 +46,10 @@
     "cordis",
     "plugin",
     "share",
-    "lan"
+    "lan",
+    "redaction",
+    "privacy",
+    "secret-scrubbing"
   ],
   "license": "MIT",
   "publishConfig": {
@@ -68,5 +66,8 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "^3.18.4"
   }
 }

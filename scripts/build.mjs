@@ -1,9 +1,14 @@
 #!/usr/bin/env node
 /**
- * dsh-share build — zero runtime dependencies.
+ * dsh-share build.
  *
  * Produces the npm-package artifacts under lib/:
- *   lib/index.js  — host half: src/host/ bundled to plain ESM.
+ *   lib/index.js  — host half: src/host/ bundled to plain ESM. Everything is
+ *                   inlined, including the settings schema library, so the
+ *                   installed package never depends on resolving
+ *                   `@deepseek-ai/schemastery` from the profile at runtime
+ *                   (the harness identifies a schema by its `~standard.vendor`
+ *                   string, so an inlined copy is equivalent to the host's).
  *   lib/client.js — client half: src/client/ bundled to CJS, then wrapped in
  *                   the web boot handoff `window.__ModuleLoader__.load(...)`,
  *                   the closure-factory format every `dsh.client` package's
@@ -70,6 +75,30 @@ if (host.name !== 'dsh-share' || !Array.isArray(host.inject) || typeof host.appl
 }
 if (!host.inject.includes('connection')) {
   throw new Error('host half must inject the connection service')
+}
+
+// The settings schema must survive bundling, on BOTH shapes the loader may
+// pick (`exports.default ?? exports`). A missing or invalid schema is not a
+// hard failure at runtime — the Plugins page simply shows no card — so it has
+// to be asserted here instead.
+const Config = host.Config ?? host.default?.Config
+if (Config === undefined || typeof Config['~standard']?.validate !== 'function') {
+  throw new Error('host half does not expose a valid settings Config schema')
+}
+// Validating a representative document proves the schema itself is sound:
+// schemastery throws at validate time (not construction time) for a volatile
+// field nested inside another volatile field, and that mistake would otherwise
+// only surface as a silently missing settings card.
+const sample = Config['~standard'].validate({
+  host: '0.0.0.0',
+  port: 3081,
+  mounts: [{ name: 'apk', path: '/tmp', token: '', index: true, hidden: false }],
+})
+if (sample.issues !== undefined) {
+  throw new Error(`settings Config rejected a valid document: ${JSON.stringify(sample.issues)}`)
+}
+if (sample.value.mounts?.get === undefined) {
+  throw new Error('settings Config must expose `mounts` as a volatile field (a live handle with get())')
 }
 
 console.log(`built ${pkg.name}:`)

@@ -1,3 +1,9 @@
 node_modules/
 lib/
 *.tsbuildinfo
+
+# Isolated end-to-end harness (e2e/): a throwaway DSH_HOME used to boot a real
+# dsh instance and verify share creation + redaction against a live loader. It
+# hardcodes machine-specific paths and a private LAN model endpoint, so it is
+# deliberately not published. See README.md "Development".
+e2e/

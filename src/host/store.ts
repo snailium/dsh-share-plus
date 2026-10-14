@@ -18,8 +18,16 @@ export interface ShareEntry {
   createdAt: number
   expiresAt?: number
   entries: TranscriptEntry[]
+  /**
+   * Whether this snapshot kept the machine-facing parts of the session (tool
+   * calls, injected context, stats). Absent on shares created before the
+   * setting existed — those are treated as technical, which is what they are.
+   */
+  technical?: boolean
   /** Session statistics frozen with the snapshot (absent on older shares). */
   stats?: ShareStats
+  /** Number of secret patterns redacted when this snapshot was frozen. */
+  redactedCount?: number
 }
 
 interface PersistShape {
