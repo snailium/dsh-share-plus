@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-20
+
+### Fixed
+
+- **Compatibility with dsh 0.2.1-rc.2.** The session format is still v4, but
+  that release adds three event types (`job/registered`, `job/settled`,
+  `working-directory/change`). Because the plugin recognises event types from
+  a hardcoded copy of the harness vocabulary, every share of a 0.2.1 session
+  would have raised the false "较新的会话格式 / newer session format" banner.
+  The three types are now listed as deliberately ignored.
+
+### Added
+
+- **`tests/vocabulary.test.mjs`** — a conformance test for the event
+  vocabulary. It pins the reference vocabularies of every supported harness
+  generation (0.2.0-rc.2 with 59 types, 0.2.1-rc.2 with 62) and fails when
+  the plugin's list drifts from them: a type the harness writes but the plugin
+  does not know (a false banner on every share), a type no harness has (a typo
+  hiding a real incompatibility), a rendered type a harness does not define, or
+  a declared `dsh.sessionFormat` that does not match. The test is mutation-
+  verified in both directions.
+
+  The plugin recognises the **union** of all known vocabularies, so a share
+  created on an older harness stays readable on a newer one.
+
+
 ## [0.4.0] - 2026-10-14
 
 ### Changed
@@ -124,7 +150,8 @@ package was published.
 - Share pages are readable by default: prompts and the final answer only, with
   tool calls, injected context and stats opt-in behind `technicalInfo`.
 
-[Unreleased]: https://github.com/snailium/dsh-share-plus/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/snailium/dsh-share-plus/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/snailium/dsh-share-plus/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/snailium/dsh-share-plus/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/snailium/dsh-share-plus/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/snailium/dsh-share-plus/compare/v0.3.1...v0.3.2

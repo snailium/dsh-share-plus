@@ -104,6 +104,19 @@ const s4events = [
   { seq: 7, type: 'future/thing', time: 5000, data: {} },
 ]
 
+// dsh 0.2.1-rc.2 keeps format v4 but ADDS three event types (job/registered,
+// job/settled, working-directory/change). They are ordinary harness
+// bookkeeping, so a session carrying them must NOT raise the format banner —
+// warning on every share of a 0.2.1 session would be worse than never warning.
+const s5events = [
+  { seq: 1, type: 'request/header', time: 1000, data: { header: { config: { model: 'm', provider: 'p' }, system: 'sys', tools: [] } } },
+  { seq: 2, type: 'user/message', time: 2000, data: { source: { kind: 'user' }, content: [{ type: 'text', text: 'hi from a 0.2.1 session' }] }, surfaceOp: 'append' },
+  { seq: 3, type: 'job/registered', time: 2500, data: { jobId: 'j1' } },
+  { seq: 4, type: 'job/settled', time: 2600, data: { jobId: 'j1' } },
+  { seq: 5, type: 'working-directory/change', time: 2700, data: { cwd: '/tmp' } },
+  { seq: 6, type: 'assistant/message', time: 3000, data: { message: { source: { kind: 'model' }, content: [{ type: 'text', text: 'answer' }] } }, surfaceOp: 'append' },
+]
+
 // Two turns with a 90s idle gap between them: active execution = 2s, while the
 // wall-clock span is 91s. `durationMs` must report the former.
 const s2events = [
@@ -144,7 +157,7 @@ const ctx = {
   get(name) {
     if (name === 'sessionQuery') return {
       readSession: async (id) => {
-        const sessions = { s1: events, s2: s2events, s3: s3events, s4: s4events }
+        const sessions = { s1: events, s2: s2events, s3: s3events, s4: s4events, s5: s5events }
         const found = sessions[id]
         if (found === undefined) throw new Error(`session ${id} not found`)
         return { session: { id }, events: found }
@@ -311,6 +324,14 @@ assert.match(futureHtml, /legit answer/, 'the answer renders too')
 assert.match(futureHtml, /较新的会话格式/, 'the page says the format is newer than this build')
 assert.match(futureHtml, /2 条记录未渲染/, 'and reports how many events were skipped')
 assert.doesNotMatch(futureHtml, /from the future/, 'an unknown event never leaks its payload into the page')
+
+// A dsh 0.2.1-rc.2 session must NOT warn: the format is still v4 and the three
+// types it adds are ordinary bookkeeping.
+const newer = (await rpc('create', { sessionId: 's5' })).value.share
+const newerPort = new URL(newer.urls[1] ?? newer.url).port
+const newerHtml = await (await fetch(`http://127.0.0.1:${newerPort}/s/${newer.token}`)).text()
+assert.match(newerHtml, /hi from a 0\.2\.1 session/, 'a 0.2.1 session still renders')
+assert.doesNotMatch(newerHtml, /较新的会话格式/, 'a 0.2.1 session raises no format banner')
 
 // An ORDINARY session must carry no such banner: `step/start`, `llm/retry`,
 // `turn/start` and friends are format-v4 events this build deliberately

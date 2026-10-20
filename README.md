@@ -262,6 +262,11 @@ A session written by a newer format is not a crash: unknown event types are
 skipped, and the share page says so ("此分享的部分内容使用了较新的会话格式")
 instead of quietly showing a short conversation.
 
+A harness release may add event types without bumping the format version, so
+the plugin recognises the **union** of every vocabulary it has supported
+(`tests/vocabulary.test.mjs` pins them). Supported harness generations:
+`0.2.0-rc.2` (59 event types) and `0.2.1-rc.2` (62), both format v4.
+
 ### Public links
 
 By default every generated link is a LAN address (`http://<ip>:<port>/...`). When you want the link to work from the internet — say, for a phone that is not on your network — set **绑定域名 / Public domain** in the settings card (or `publicDomain` in config) to a hostname that points at this machine, e.g. `share.example.com`. Generated links then lead with `https://share.example.com/s/<token>`; the LAN addresses stay in the list as fallbacks for local devices.

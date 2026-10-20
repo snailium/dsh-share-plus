@@ -1,6 +1,6 @@
 {
   "name": "dsh-share-plus",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Session share plugin for DeepSeek Harness: share a frozen, redacted transcript snapshot as a readable web page over LAN or a public domain.",
   "author": "gwang",
   "contributors": [
@@ -32,7 +32,7 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "npm run build && npm run typecheck && node tests/host.test.mjs && node tests/mounts.test.mjs && node tests/boot.test.mjs && node tests/client.test.mjs",
+    "test": "npm run build && npm run typecheck && node tests/host.test.mjs && node tests/mounts.test.mjs && node tests/boot.test.mjs && node tests/client.test.mjs && node tests/vocabulary.test.mjs",
     "prepublishOnly": "npm run build"
   },
   "dsh": {
