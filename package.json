@@ -1,6 +1,6 @@
 {
   "name": "dsh-share-plus",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Session share plugin for DeepSeek Harness: share a frozen, redacted transcript snapshot as a readable web page over LAN or a public domain.",
   "author": "gwang",
   "contributors": [
@@ -19,10 +19,12 @@
   "exports": {
     ".": "./lib/index.js",
     "./client": "./lib/client.js",
+    "./locale/*.json": "./locale/*.json",
     "./package.json": "./package.json"
   },
   "files": [
     "lib",
+    "locale",
     "cordis.patch.yml",
     "README.md",
     "README_CN.md",

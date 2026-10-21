@@ -33,6 +33,11 @@ export const DICT_ZH: Record<string, string> = {
 
   // ---- settings card: directory mounts ----
   'cardSummary': '分享会话快照（默认只含提问与最终回答）与只读目录。',
+  'settings.sectionGeneral': '通用分享设置',
+  'settings.sectionMounts': '只读目录挂载 (Directory Mounts)',
+  'settings.mountsEmpty': '暂未配置任何目录挂载。点击下方“添加目录”将本机文件夹挂载为局域网/公网只读下载源。',
+  'settings.mountHeader': '挂载 #{n}',
+  'settings.statusServing': '服务正常',
   'cardTechnical': '输出技术信息',
   'cardTechnicalHint': '关闭（默认）时，分享页只显示你发送的 prompt 和每一轮的最终回答；开启后才会带上工具调用、系统消息、上下文注入和统计信息。单次分享可在分享对话框里另行覆盖。',
   'cardDomain': '绑定域名',
@@ -91,6 +96,11 @@ export const DICT_EN: Record<string, string> = {
 
   // ---- settings card: directory mounts ----
   'cardSummary': 'Share session snapshots (prompts and final answers by default) and read-only directories.',
+  'settings.sectionGeneral': 'General Sharing Settings',
+  'settings.sectionMounts': 'Read-Only Directory Mounts',
+  'settings.mountsEmpty': 'No directory mounts configured yet. Click "Add directory" below to share local folders read-only.',
+  'settings.mountHeader': 'Mount #{n}',
+  'settings.statusServing': 'Serving',
   'cardTechnical': 'Include technical output',
   'cardTechnicalHint': 'When off (the default) a share page shows only your prompts and the final answer of each turn. Turn it on to also include tool calls, system messages, injected context and session stats. A single share can override this in the share dialog.',
   'cardDomain': 'Public domain',

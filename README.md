@@ -364,6 +364,14 @@ The `prepublishOnly` script rebuilds `lib/` before every publish, so the tarball
 
 Forked from [`zljr/dsh-share`](https://github.com/zljr/dsh-share) by zljr, MIT licensed. The share server, storage, transcript folding, stats, Markdown rendering and snapshot page are upstream work; redaction, the redaction UI, and the direct channel registration are additions in this fork.
 
+## Display metadata
+
+The package ships `locale/en.json` and `locale/zh.json` with a `meta` object
+(`title`, `description`). The harness reads `locale/en.json` as the anchor and
+resolves each file through the package's `"./locale/*.json"` export, so the
+Plugins page shows a translated title and description instead of the raw
+package name.
+
 ## License
 
 [MIT](./LICENSE)

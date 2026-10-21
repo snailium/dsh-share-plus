@@ -356,6 +356,12 @@ npm publish --registry=https://registry.npmjs.org
 
 fork 自 zljr 的 [`zljr/dsh-share`](https://github.com/zljr/dsh-share)，MIT 许可。分享服务器、存储、转写折叠、统计、Markdown 渲染与快照页均为上游成果；脱敏、脱敏交互，以及直接注册通道是本 fork 的新增部分。
 
+## 显示信息
+
+包内附带 `locale/en.json` 与 `locale/zh.json`，其中 `meta` 对象提供 `title` 与
+`description`。harness 以 `locale/en.json` 为基准，并通过包的 `"./locale/*.json"`
+导出解析各语言文件，因此插件页面会显示翻译后的标题与描述，而不是原始包名。
+
 ## 许可
 
 [MIT](./LICENSE)

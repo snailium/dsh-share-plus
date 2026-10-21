@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Share Snapshots & Mounts",
+    "description": "Share read-only session snapshots over LAN or a public domain, and serve local directory mounts."
+  }
+}

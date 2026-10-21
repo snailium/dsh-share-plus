@@ -261,130 +261,181 @@ export function makeMountsCard(
       })
     }
 
-    const body: ReactNS.ReactNode[] = [
-      h('label', { key: 'tech', className: 'dshshare-card-toggle', title: t('cardTechnicalHint') },
-        h('input', {
-          id: 'dshshare-card-technical',
-          type: 'checkbox',
-          checked: technical,
-          onChange: (e: ReactNS.ChangeEvent<HTMLInputElement>) => setTechnical(e.currentTarget.checked),
-        }),
-        h('span', null, t('cardTechnical')),
+    // Section 1: General sharing configuration
+    const generalSection = h('section', { key: 'sec-general', className: 'dshshare-settings-section' },
+      h('h4', { className: 'dshshare-settings-section-title' }, t('settings.sectionGeneral')),
+      h('div', { className: 'dshshare-setting-row' },
+        h('label', { className: 'dshshare-card-toggle', title: t('cardTechnicalHint') },
+          h('input', {
+            id: 'dshshare-card-technical',
+            type: 'checkbox',
+            checked: technical,
+            onChange: (e: ReactNS.ChangeEvent<HTMLInputElement>) => setTechnical(e.currentTarget.checked),
+          }),
+          h('span', null, t('cardTechnical')),
+        ),
+        h('p', { className: 'dshshare-card-hint' }, t('cardTechnicalHint')),
       ),
-      h('p', { key: 'techhint', className: 'dshshare-card-hint' }, t('cardTechnicalHint')),
-      h('label', { key: 'domain', className: 'dshshare-card-domain', title: t('cardDomainHint') },
-        h('span', null, t('cardDomain')),
-        h('input', {
-          id: 'dshshare-card-domain',
-          type: 'text',
-          className: 'dshshare-input dshshare-domain-input',
-          value: domain,
-          placeholder: t('cardDomainPlaceholder'),
-          'aria-label': t('cardDomain'),
-          onInput: (e: ReactNS.FormEvent<HTMLInputElement>) => setDomain((e.target as HTMLInputElement).value),
-        }),
+      h('div', { className: 'dshshare-setting-row' },
+        h('label', { className: 'dshshare-card-domain', title: t('cardDomainHint') },
+          h('span', null, t('cardDomain')),
+          h('input', {
+            id: 'dshshare-card-domain',
+            type: 'text',
+            className: 'dshshare-input dshshare-domain-input',
+            value: domain,
+            placeholder: t('cardDomainPlaceholder'),
+            'aria-label': t('cardDomain'),
+            onInput: (e: ReactNS.FormEvent<HTMLInputElement>) => setDomain((e.target as HTMLInputElement).value),
+          }),
+        ),
+        h('p', { className: 'dshshare-card-hint' }, t('cardDomainHint')),
       ),
-      h('p', { key: 'domainhint', className: 'dshshare-card-hint' }, t('cardDomainHint')),
-      h('p', { key: 'hint', className: 'dshshare-card-hint' }, t('cardHint')),
-    ]
+    )
 
-    if (scope === null) {
-      body.push(h('p', { key: 'noservice', className: 'dshshare-card-error' }, t('cardUnavailable')))
+    // Section 2: Directory mounts
+    const mountItems: ReactNS.ReactNode[] = []
+    if (rows.length === 0) {
+      mountItems.push(
+        h('p', { key: 'empty', className: 'dshshare-mounts-empty' }, t('settings.mountsEmpty')),
+      )
+    } else {
+      rows.forEach((row, at) => {
+        const live = statusFor(row.name.trim())
+        const isServing = live?.status === 'serving'
+
+        const statusBadge = live !== undefined
+          ? h('span', {
+              className: `dshshare-mount-badge ${isServing ? 'serving' : 'invalid'}`,
+            }, isServing ? t('settings.statusServing') : t('cardNotServing'))
+          : null
+
+        const cardHeader = h('div', { className: 'dshshare-mount-header' },
+          h('div', { className: 'dshshare-mount-title-row' },
+            h('strong', null, t('settings.mountHeader', { n: at + 1 })),
+            statusBadge,
+          ),
+          h('button', {
+            type: 'button',
+            className: 'dshshare-btn-danger',
+            'aria-label': t('cardRemove'),
+            onClick: () => edit((next) => { next.splice(at, 1) }),
+          }, t('cardRemove')),
+        )
+
+        const fieldsGrid = h('div', { className: 'dshshare-mount-grid' },
+          h('div', { className: 'dshshare-mount-field-group' },
+            h('label', null, t('cardName')),
+            h('input', {
+              className: 'dshshare-input dshshare-mount-name',
+              value: row.name,
+              placeholder: t('cardNamePlaceholder'),
+              'aria-label': t('cardName'),
+              onInput: (e: ReactNS.FormEvent<HTMLInputElement>) => setField(at, 'name', (e.target as HTMLInputElement).value),
+            }),
+          ),
+          h('div', { className: 'dshshare-mount-field-group' },
+            h('label', null, t('cardPath')),
+            h('input', {
+              className: 'dshshare-input dshshare-mount-path',
+              value: row.path,
+              placeholder: t('cardPathPlaceholder'),
+              'aria-label': t('cardPath'),
+              onInput: (e: ReactNS.FormEvent<HTMLInputElement>) => setField(at, 'path', (e.target as HTMLInputElement).value),
+            }),
+          ),
+          h('div', { className: 'dshshare-mount-field-group' },
+            h('label', null, t('cardToken')),
+            h('input', {
+              className: 'dshshare-input dshshare-mount-token',
+              value: row.token,
+              placeholder: t('cardTokenPlaceholder'),
+              'aria-label': t('cardToken'),
+              onInput: (e: ReactNS.FormEvent<HTMLInputElement>) => setField(at, 'token', (e.target as HTMLInputElement).value),
+            }),
+          ),
+        )
+
+        const flagsRow = h('div', { className: 'dshshare-mount-options' },
+          h('label', { className: 'dshshare-mount-flag', title: t('cardIndexHint') },
+            h('input', {
+              type: 'checkbox',
+              checked: row.index,
+              onChange: (e: ReactNS.ChangeEvent<HTMLInputElement>) => setField(at, 'index', e.target.checked),
+            }),
+            h('span', null, t('cardIndex')),
+          ),
+          h('label', { className: 'dshshare-mount-flag', title: t('cardHiddenHint') },
+            h('input', {
+              type: 'checkbox',
+              checked: row.hidden,
+              onChange: (e: ReactNS.ChangeEvent<HTMLInputElement>) => setField(at, 'hidden', e.target.checked),
+            }),
+            h('span', null, t('cardHidden')),
+          ),
+        )
+
+        const notes: ReactNS.ReactNode[] = []
+        if (live !== undefined) {
+          if (live.status === 'serving') {
+            const urls = live.urls.filter((u): u is string => typeof u === 'string' && u.length > 0)
+            if (urls.length > 0) {
+              notes.push(
+                h('div', { key: `urls-${at}`, className: 'dshshare-mount-urls-card' },
+                  ...urls.map((url, uIdx) =>
+                    h('div', { key: `url-${uIdx}`, className: 'dshshare-mount-url' },
+                      h('code', null, url),
+                      h('button', {
+                        type: 'button',
+                        className: 'dshshare-link',
+                        onClick: () => {
+                          void copyText(url).then((ok) => setCopied(ok ? url : null))
+                        },
+                      }, copied === url ? t('cardCopied') : t('cardCopy')),
+                    ),
+                  ),
+                ),
+              )
+            }
+          } else {
+            notes.push(
+              h('div', { key: 'bad', className: 'dshshare-card-error' },
+                `${t('cardNotServing')}${live.reason === undefined ? '' : `：${live.reason}`}`),
+            )
+          }
+        }
+
+        mountItems.push(
+          h('div', { key: `row-${at}`, className: 'dshshare-mount-card dshshare-mount' },
+            cardHeader,
+            fieldsGrid,
+            flagsRow,
+            ...notes,
+          ),
+        )
+      })
     }
 
-    rows.forEach((row, at) => {
-      const live = statusFor(row.name.trim())
-      const rowsOut: ReactNS.ReactNode[] = [
-        h('input', {
-          key: 'name',
-          className: 'dshshare-input dshshare-mount-name',
-          value: row.name,
-          placeholder: t('cardNamePlaceholder'),
-          'aria-label': t('cardName'),
-          onInput: (e: ReactNS.FormEvent<HTMLInputElement>) => setField(at, 'name', (e.target as HTMLInputElement).value),
-        }),
-        h('input', {
-          key: 'path',
-          className: 'dshshare-input dshshare-mount-path',
-          value: row.path,
-          placeholder: t('cardPathPlaceholder'),
-          'aria-label': t('cardPath'),
-          onInput: (e: ReactNS.FormEvent<HTMLInputElement>) => setField(at, 'path', (e.target as HTMLInputElement).value),
-        }),
-        h('input', {
-          key: 'token',
-          className: 'dshshare-input dshshare-mount-token',
-          value: row.token,
-          placeholder: t('cardTokenPlaceholder'),
-          'aria-label': t('cardToken'),
-          onInput: (e: ReactNS.FormEvent<HTMLInputElement>) => setField(at, 'token', (e.target as HTMLInputElement).value),
-        }),
-        h('label', { key: 'index', className: 'dshshare-mount-flag', title: t('cardIndexHint') },
-          h('input', {
-            type: 'checkbox',
-            checked: row.index,
-            onChange: (e: ReactNS.ChangeEvent<HTMLInputElement>) => setField(at, 'index', e.target.checked),
-          }),
-          h('span', null, t('cardIndex')),
-        ),
-        h('label', { key: 'hidden', className: 'dshshare-mount-flag', title: t('cardHiddenHint') },
-          h('input', {
-            type: 'checkbox',
-            checked: row.hidden,
-            onChange: (e: ReactNS.ChangeEvent<HTMLInputElement>) => setField(at, 'hidden', e.target.checked),
-          }),
-          h('span', null, t('cardHidden')),
-        ),
-        h('button', {
-          key: 'remove',
-          type: 'button',
-          className: 'dshshare-link dshshare-mount-remove',
-          'aria-label': t('cardRemove'),
-          onClick: () => edit((next) => { next.splice(at, 1) }),
-        }, t('cardRemove')),
-      ]
-
-      const notes: ReactNS.ReactNode[] = []
-      if (live !== undefined) {
-        if (live.status === 'serving') {
-          // Every URL the Host reports gets its own copyable row — the public
-          // domain leads, LAN fallbacks follow.
-          const urls = live.urls.filter((u): u is string => typeof u === 'string' && u.length > 0)
-          notes.push(...urls.map((url, at) =>
-            h('div', { key: `url-${at}`, className: 'dshshare-mount-url' },
-              h('code', null, url),
-              h('button', {
-                type: 'button',
-                className: 'dshshare-link',
-                onClick: () => {
-                  void copyText(url).then((ok) => setCopied(ok ? url : null))
-                },
-              }, copied === url ? t('cardCopied') : t('cardCopy')),
-            ),
-          ))
-        } else {
-          notes.push(
-            h('div', { key: 'bad', className: 'dshshare-card-error' },
-              `${t('cardNotServing')}${live.reason === undefined ? '' : `：${live.reason}`}`),
-          )
-        }
-      }
-
-      body.push(
-        h('div', { key: `row-${at}`, className: 'dshshare-mount' },
-          h('div', { className: 'dshshare-mount-fields' }, rowsOut),
-          ...notes,
-        ),
-      )
-    })
-
-    body.push(
-      h('div', { key: 'actions', className: 'dshshare-card-actions' },
+    const mountsSection = h('section', { key: 'sec-mounts', className: 'dshshare-settings-section' },
+      h('div', { className: 'dshshare-settings-section-title' },
+        h('span', null, t('settings.sectionMounts')),
         h('button', {
           type: 'button',
-          className: 'dshshare-link',
+          className: 'dshshare-link dshshare-btn-add',
           onClick: () => edit((next) => { next.push(emptyRow()) }),
-        }, t('cardAdd')),
+        }, `+ ${t('cardAdd')}`),
+      ),
+      h('p', { className: 'dshshare-card-hint' }, t('cardHint')),
+      ...mountItems,
+    )
+
+    const actionsBar = h('div', { key: 'actions', className: 'dshshare-card-actions' },
+      h('div', { className: 'dshshare-actions-left' },
+        h('button', {
+          type: 'button',
+          className: 'dshshare-link dshshare-btn-add',
+          onClick: () => edit((next) => { next.push(emptyRow()) }),
+        }, `+ ${t('cardAdd')}`),
         h('button', {
           type: 'button',
           className: 'dshshare-primary',
@@ -399,16 +450,24 @@ export function makeMountsCard(
             }, t('cardDiscard'))
           : null,
       ),
+      h('div', { className: 'dshshare-actions-right' },
+        h('p', { className: 'dshshare-card-note' }, t('cardReadOnlyNote')),
+      ),
     )
 
+    const body: ReactNS.ReactNode[] = [generalSection, mountsSection]
+
+    if (scope === null) {
+      body.unshift(h('p', { key: 'noservice', className: 'dshshare-card-error' }, t('cardUnavailable')))
+    }
     if (error !== null) {
       body.push(h('p', { key: 'err', className: 'dshshare-card-error' }, error))
     }
     if (statusError !== null) {
       body.push(h('p', { key: 'serr', className: 'dshshare-card-error' }, statusError))
     }
-    body.push(h('p', { key: 'foot', className: 'dshshare-card-note' }, t('cardReadOnlyNote')))
+    body.push(actionsBar)
 
-    return h('div', { className: 'dshshare-card', 'data-plugin-config': 'dsh-share-plus' }, ...body)
+    return h('div', { className: 'dshshare-settings-view dshshare-card', 'data-plugin-config': 'dsh-share-plus' }, ...body)
   }
 }

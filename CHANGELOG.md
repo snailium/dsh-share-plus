@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-20
+
+### Added
+
+- **Localized plugin display metadata.** The package now ships
+  `locale/en.json` and `locale/zh.json`, so the Plugins page shows a real
+  title and description ("Share Snapshots & Mounts" / "分享快照与目录挂载")
+  instead of falling back to the package name. The locale files are exposed
+  through a new `"./locale/*.json"` export so the harness can resolve them,
+  and `locale` was added to the published `files` list.
+
+  The harness reads `locale/en.json` as the anchor, requires every file name
+  to be a language id, and accepts a `meta` object with `title` and
+  `description` — each a non-empty string.
+
+### Changed
+
+- **The settings card is reorganised.** The single flat form became two
+  sections — *General Sharing Settings* (technical output, public domain) and
+  *Read-Only Directory Mounts* — with a per-mount card showing a live
+  serving/invalid badge, the copyable URLs, and the reason a mount is not
+  being served. The action bar now groups the add/save/discard controls on the
+  left and the read-only note on the right.
+
+  The save path is unchanged: one fenced mutation writes `mounts`,
+  `technicalInfo` and `publicDomain` together, and the result is confirmed
+  against a read-back rather than trusted from the return value.
+
+  The styles follow the harness theme more closely than before — 73 theme
+  variables (up from 51), with every hardcoded colour only a fallback for a
+  missing variable.
+
+
 ## [0.4.1] - 2026-10-20
 
 ### Fixed
@@ -150,7 +183,8 @@ package was published.
 - Share pages are readable by default: prompts and the final answer only, with
   tool calls, injected context and stats opt-in behind `technicalInfo`.
 
-[Unreleased]: https://github.com/snailium/dsh-share-plus/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/snailium/dsh-share-plus/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/snailium/dsh-share-plus/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/snailium/dsh-share-plus/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/snailium/dsh-share-plus/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/snailium/dsh-share-plus/compare/v0.3.2...v0.3.3
