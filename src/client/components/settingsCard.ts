@@ -429,13 +429,10 @@ export function makeMountsCard(
       ...mountItems,
     )
 
+    // Save/discard live next to the content they commit; "Add directory" stays in
+    // the mounts section header (it was duplicated here and added visual noise).
     const actionsBar = h('div', { key: 'actions', className: 'dshshare-card-actions' },
       h('div', { className: 'dshshare-actions-left' },
-        h('button', {
-          type: 'button',
-          className: 'dshshare-link dshshare-btn-add',
-          onClick: () => edit((next) => { next.push(emptyRow()) }),
-        }, `+ ${t('cardAdd')}`),
         h('button', {
           type: 'button',
           className: 'dshshare-primary',
@@ -468,6 +465,10 @@ export function makeMountsCard(
     }
     body.push(actionsBar)
 
-    return h('div', { className: 'dshshare-settings-view dshshare-card', 'data-plugin-config': 'dsh-share-plus' }, ...body)
+    // Deliberately NOT `dshshare-card`: that class is the modal dialog's frame
+    // (max-width 460px, max-height 80vh, its own border/shadow/scroll). The page
+    // supplies the frame here, so reusing it squeezed the whole form into a
+    // narrow scrolling box sitting inside the page's own box.
+    return h('div', { className: 'dshshare-settings-view', 'data-plugin-config': 'dsh-share-plus' }, ...body)
   }
 }

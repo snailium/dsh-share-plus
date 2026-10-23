@@ -118,35 +118,52 @@ export const STYLES = `
   color: var(--dsw-alias-label-secondary); font-size: 18px; cursor: pointer; line-height: 1;
 }
 
-/* ---- settings page view (full width, clean sectioned layout) ---- */
+/* ---- settings page view (full width, clean sectioned layout) ----
+ * The page already frames this form: it renders inside a bordered, padded
+ * panel. So the view adds NO frame of its own — no border, no background, no
+ * max-width, no scroll box. Earlier it reused the modal's .dshshare-card
+ * (max-width 460px) and stacked a bordered section inside a bordered mount
+ * card, which is the "box inside a box, squeezed" report.
+ *
+ * container-type: inline-size lets the field grid respond to the width the
+ * page actually gives this form (measured ~900px), not the viewport — the old
+ * @media (max-width: 768px) breakpoint could never fire on a wide window even
+ * while the form itself was only ~460px wide. */
 .dshshare-settings-view {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 28px;
   width: 100%;
+  min-width: 0;
+  container-type: inline-size;
   font-family: var(--dsw-font-family, inherit);
   font-size: 13px;
   color: var(--dsw-alias-label-primary);
 }
 
 .dshshare-settings-section {
-  background: var(--dsw-alias-bg-layer-2);
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 12px;
-  padding: 18px 20px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
+  min-width: 0;
+}
+
+/* Sections are separated by a rule rather than each being its own box. */
+.dshshare-settings-section + .dshshare-settings-section {
+  border-top: 1px solid var(--dsw-alias-border-l2);
+  padding-top: 26px;
 }
 
 .dshshare-settings-section-title {
   margin: 0;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
+  letter-spacing: 0.01em;
   color: var(--dsw-alias-label-primary);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
 }
 
 .dshshare-setting-row {
@@ -218,14 +235,18 @@ export const STYLES = `
   text-align: center;
 }
 
+/* The mount row is the ONE box in the form: it groups fields that belong to a
+ * single mount. Proportional minmax(0, ...) columns let the path field keep
+ * the room it needs and never overflow the container; the container query
+ * collapses to a single column when the form itself is narrow. */
 .dshshare-mount-card {
   border: 1px solid var(--dsw-alias-border-l2);
   border-radius: 10px;
   padding: 14px 16px;
-  background: var(--dsw-alias-bg-layer-1);
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-width: 0;
 }
 
 .dshshare-mount-header {
@@ -261,14 +282,19 @@ export const STYLES = `
 
 .dshshare-mount-grid {
   display: grid;
-  grid-template-columns: 140px 1fr 180px;
+  /* minmax(0, …) is load-bearing: without it a grid item refuses to shrink
+   * below its content width and the row overflows the card (the clipped
+   * "Access token" input). */
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 2fr) minmax(0, 1.1fr);
   gap: 12px;
   align-items: start;
+  min-width: 0;
 }
 
-@media (max-width: 768px) {
+/* Responds to the form's own width, not the window's. */
+@container (max-width: 560px) {
   .dshshare-mount-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -276,6 +302,7 @@ export const STYLES = `
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
 .dshshare-mount-field-group label {
@@ -293,6 +320,11 @@ export const STYLES = `
   font-size: 12.5px;
   font-family: var(--dsw-font-family, inherit);
   transition: border-color 0.15s ease;
+  /* Fill the grid cell and be allowed to shrink; without both, the input keeps
+   * its intrinsic width and gets clipped at the card's edge. */
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .dshshare-input:focus {
@@ -352,8 +384,10 @@ export const STYLES = `
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding-top: 8px;
+  gap: 12px 20px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--dsw-alias-border-l2);
+  padding-top: 18px;
 }
 
 .dshshare-actions-left,

@@ -187,7 +187,15 @@ const cardRoot = createRoot(cardContainer)
 cardRoot.render(React.createElement(cardReg.component, { view: 'page' }))
 await tick()
 
-assert.ok(cardContainer.querySelector('.dshshare-card') !== null, 'card body rendered')
+// The settings view must NOT carry the modal dialog's `.dshshare-card` class:
+// that class pins max-width 460px / max-height 80vh / its own border, which
+// squeezed the whole form into a scrolling box inside the page's own frame.
+assert.ok(cardContainer.querySelector('.dshshare-settings-view') !== null, 'card body rendered')
+assert.equal(
+  cardContainer.querySelector('.dshshare-settings-view').classList.contains('dshshare-card'),
+  false,
+  'the settings view must not reuse the modal dialog frame class',
+)
 assert.equal(cardContainer.querySelectorAll('.dshshare-mount').length, 1, 'one saved mount rendered')
 
 const nameInput = cardContainer.querySelector('.dshshare-mount-name')
@@ -252,8 +260,16 @@ assert.equal(typeof staged.token, 'string', 'token must be a string even when em
 assert.equal(typeof staged.index, 'boolean', 'index must be a real boolean, not "true"')
 assert.equal(typeof staged.hidden, 'boolean', 'hidden must be a real boolean, not "true"')
 
-// Adding and removing rows stays local until save.
-cardContainer.querySelector('.dshshare-card-actions .dshshare-link').click()
+// Adding a row stays local until save. The add control lives in the mounts
+// section header (it was duplicated in the action bar; that copy is gone).
+assert.equal(
+  cardContainer.querySelectorAll('.dshshare-card-actions .dshshare-btn-add').length,
+  0,
+  'the action bar must not duplicate the add-directory control',
+)
+const addButton = cardContainer.querySelector('.dshshare-settings-section-title .dshshare-btn-add')
+assert.ok(addButton !== null, 'add-directory control present in the mounts section header')
+addButton.click()
 await tick(10)
 assert.equal(cardContainer.querySelectorAll('.dshshare-mount').length, 2, 'add appends a row')
 assert.equal(mutateCalls.length, 1, 'adding a row does not write until save')

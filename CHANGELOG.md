@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-10-23
+
+### Fixed
+
+- **The settings form was squeezed into a narrow scrolling box.** The page
+  view's root element carried the `dshshare-card` class, which is the *modal
+  share dialog's* frame: `max-width: 460px`, `max-height: 80vh`,
+  `overflow: auto`, plus its own border, shadow and padding. Because the page
+  already supplies a frame, the whole form rendered as a 460px box inside the
+  page's own box — box within box, and scrolling separately. The view now
+  carries only `dshshare-settings-view` and adds no frame at all. Measured
+  width went from 460px to the full 904px the page offers.
+
+- **The mount fields overflowed their card.** The grid was
+  `140px 1fr 180px`, whose fixed tracks total more than the narrow box could
+  hold, so the "Access token" input was clipped at the card edge. Columns are
+  now proportional `minmax(0, …)` tracks (measured 190 / 423 / 233px, zero
+  overflow) and the inputs fill their cell (`width: 100%; min-width: 0;
+  box-sizing: border-box`).
+
+- **The responsive breakpoint could never fire.** It was
+  `@media (max-width: 768px)`, which tests the *window*, not the form — with a
+  1280px window it stayed false even while the form was only 460px wide. The
+  view is now a query container (`container-type: inline-size`) and the grid
+  collapses on `@container (max-width: 560px)`. Verified at three widths: 900px
+  container → 3 columns, 520px → 1 column, 420px → 1 column, all at a 1280px
+  viewport.
+
+### Changed
+
+- Sections are separated by a rule instead of each being its own bordered,
+  filled box; the mount row is now the only box in the form.
+- The duplicate "Add directory" button is gone from the save bar (it stays in
+  the mounts section header, where the list it appends to lives).
+- The save bar gained a top divider and wraps instead of squeezing its note.
+
+
 ## [0.5.0] - 2026-10-20
 
 ### Added
@@ -183,7 +220,8 @@ package was published.
 - Share pages are readable by default: prompts and the final answer only, with
   tool calls, injected context and stats opt-in behind `technicalInfo`.
 
-[Unreleased]: https://github.com/snailium/dsh-share-plus/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/snailium/dsh-share-plus/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/snailium/dsh-share-plus/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/snailium/dsh-share-plus/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/snailium/dsh-share-plus/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/snailium/dsh-share-plus/compare/v0.3.3...v0.4.0
